@@ -1,11 +1,14 @@
 import pygame
 
 from anim_feedback.game import Game
+from start_screen import run_start_screen
 
 
 def main() -> None:
     pygame.init()
-    pygame.display.set_caption("Week 5 Animation + Feedback (Pygame)")
+    pygame.display.set_caption("Don't Crumble")
+
+    run_start_screen()  # Shows the start screen, returns when Enter is pressed
 
     game = Game()
     clock = pygame.time.Clock()
