@@ -478,7 +478,7 @@ class Game:
         hud_rect = pygame.Rect(0, 0, self.SCREEN_W, self.HUD_H)
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
-        # Clean HUD: just show the core game info
+        # Clean, high-contrast HUD
         self._draw_text(f"HP {self.player.hp}   Score {self.player.score}", (12, 16), self.palette.text)
 
         cam = self._camera_offset()
@@ -527,12 +527,19 @@ class Game:
             self._draw_centered("Paused — Press P to resume.", y=self.playfield.centery, color=self.palette.text)
 
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
+        # Slight shadow behind text for readability over busy backgrounds
+        shadow = self.font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.font.render(text, True, color)
-        self.screen.blit(s, pos)
+        x, y = pos
+        self.screen.blit(shadow, (x + 1, y + 1))
+        self.screen.blit(s, (x, y))
 
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
+        shadow = self.big_font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.big_font.render(text, True, color)
+        r_shadow = shadow.get_rect(center=(self.SCREEN_W // 2, y + 1))
         r = s.get_rect(center=(self.SCREEN_W // 2, y))
+        self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)
 
 
@@ -585,39 +592,59 @@ def _draw_player_frame(color: pygame.Color, *, leg_phase: int, eye_open: bool) -
     w, h = 44, 44
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
 
-    # Body
-    body = pygame.Rect(0, 0, 24, 26)
-    body.center = (w // 2, h // 2 + 4)
-    pygame.draw.rect(surf, color, body, border_radius=8)
-    pygame.draw.rect(surf, pygame.Color("#000000"), body, 2, border_radius=8)
+    dark = pygame.Color("#1b2229")
+
+    # Torso
+    torso = pygame.Rect(0, 0, 16, 20)
+    torso.center = (w // 2, h // 2 + 2)
+    pygame.draw.rect(surf, color, torso, border_radius=4)
+    pygame.draw.rect(surf, dark, torso, 2, border_radius=4)
 
     # Head
-    head_center = (w // 2, h // 2 - 10)
-    pygame.draw.circle(surf, color, head_center, 10)
-    pygame.draw.circle(surf, pygame.Color("#000000"), head_center, 10, 2)
+    head_center = (w // 2, torso.top - 8)
+    pygame.draw.circle(surf, color, head_center, 7)
+    pygame.draw.circle(surf, dark, head_center, 7, 2)
 
-    # Eyes
-    eye = pygame.Color("#2e3440")
+    # Face / eyes (kept simple so it reads as a little person)
+    eye_col = dark
     if eye_open:
-        pygame.draw.circle(surf, eye, (head_center[0] - 3, head_center[1] - 1), 2)
-        pygame.draw.circle(surf, eye, (head_center[0] + 3, head_center[1] - 1), 2)
+        pygame.draw.circle(surf, eye_col, (head_center[0] - 2, head_center[1] - 1), 1)
+        pygame.draw.circle(surf, eye_col, (head_center[0] + 2, head_center[1] - 1), 1)
     else:
-        pygame.draw.line(surf, eye, (head_center[0] - 5, head_center[1] - 1), (head_center[0] - 1, head_center[1] - 1), 2)
-        pygame.draw.line(surf, eye, (head_center[0] + 1, head_center[1] - 1), (head_center[0] + 5, head_center[1] - 1), 2)
+        pygame.draw.line(surf, eye_col, (head_center[0] - 3, head_center[1] - 1), (head_center[0] - 1, head_center[1] - 1), 2)
+        pygame.draw.line(surf, eye_col, (head_center[0] + 1, head_center[1] - 1), (head_center[0] + 3, head_center[1] - 1), 2)
 
-    # Legs (simple alternating phase)
-    leg_y = body.bottom + 2
-    dx = 6
-    phase = leg_phase % 4
-    left_off = (-dx, 4) if phase in {0, 3} else (-dx, 1)
-    right_off = (dx, 4) if phase in {1, 2} else (dx, 1)
+    # Legs – two simple blocks that shift slightly with the run cycle
+    leg_phase = leg_phase % 4
+    base_leg_y = torso.bottom + 1
+    step = 3
+    left_dx = -3 if leg_phase in {0, 3} else -1
+    right_dx = 1 if leg_phase in {0, 1} else 3
 
-    pygame.draw.line(surf, pygame.Color("#2e3440"), (w // 2 - 6, leg_y), (w // 2 - 6 + left_off[0] // 3, leg_y + left_off[1]), 4)
-    pygame.draw.line(surf, pygame.Color("#2e3440"), (w // 2 + 6, leg_y), (w // 2 + 6 + right_off[0] // 3, leg_y + right_off[1]), 4)
+    left_leg = pygame.Rect(0, 0, 5, 10)
+    right_leg = pygame.Rect(0, 0, 5, 10)
+    left_leg.midtop = (w // 2 - step, base_leg_y + left_dx // 2)
+    right_leg.midtop = (w // 2 + step, base_leg_y + right_dx // 2)
+    pygame.draw.rect(surf, dark, left_leg)
+    pygame.draw.rect(surf, dark, right_leg)
 
-    # Arms
-    arm_y = body.top + 10
-    pygame.draw.line(surf, pygame.Color("#2e3440"), (body.left + 3, arm_y), (body.left - 6, arm_y + 3), 4)
-    pygame.draw.line(surf, pygame.Color("#2e3440"), (body.right - 3, arm_y), (body.right + 6, arm_y + 3), 4)
+    # Arms – simple rectangles angled slightly out
+    arm_y = torso.top + 8
+    arm_len = 9
+
+    pygame.draw.line(
+        surf,
+        dark,
+        (torso.left - 2, arm_y),
+        (torso.left - 2 - arm_len, arm_y + 3),
+        3,
+    )
+    pygame.draw.line(
+        surf,
+        dark,
+        (torso.right + 2, arm_y),
+        (torso.right + 2 + arm_len, arm_y + 3),
+        3,
+    )
 
     return surf
