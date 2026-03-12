@@ -11,6 +11,7 @@ from .palette import Palette
 from .particle import Particle
 from .coin import *
 from .map import *
+from .tile_manager import TileManager
 
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
@@ -128,6 +129,7 @@ class Game:
     fps = 60
 
     SCREEN_W, SCREEN_H = 960, 540
+    WORLD_W = 2880
     HUD_H = 56
     PADDING = 12
 
@@ -142,7 +144,7 @@ class Game:
         self.playfield = pygame.Rect(
             self.PADDING,
             self.HUD_H + self.PADDING,
-            self.SCREEN_W - 2 * self.PADDING,
+            self.WORLD_W - 2 * self.PADDING,
             self.SCREEN_H - self.HUD_H - 2 * self.PADDING,
         )
 
@@ -183,7 +185,10 @@ class Game:
         self.hazards.empty()
         self.particles.clear()
 
-        self.player = Player(self.playfield.center, color=self.palette.player)
+        self.player = Player(
+            (self.playfield.left + 200, self.playfield.centery),
+            color=self.palette.player,
+        )
         self.all_sprites.add(self.player)
 
         def add_wall(r: pygame.Rect) -> None:
@@ -197,16 +202,33 @@ class Game:
         add_wall(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
         add_wall(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
 
-        add_wall(pygame.Rect(self.playfield.left + 180, self.playfield.top + 110, 18, 240))
-        add_wall(pygame.Rect(self.playfield.left + 420, self.playfield.top + 40, 18, 240))
-        add_wall(pygame.Rect(self.playfield.left + 560, self.playfield.top + 240, 260, 18))
+        lx = self.playfield.left
+        lt = self.playfield.top
+        add_wall(pygame.Rect(lx + 180,  lt + 110, 18, 240))
+        add_wall(pygame.Rect(lx + 420,  lt + 40,  18, 240))
+        add_wall(pygame.Rect(lx + 560,  lt + 240, 260, 18))
+        add_wall(pygame.Rect(lx + 800,  lt + 80,  18, 200))
+        add_wall(pygame.Rect(lx + 1000, lt + 160, 220, 18))
+        add_wall(pygame.Rect(lx + 1300, lt + 100, 18, 280))
+        add_wall(pygame.Rect(lx + 1600, lt + 60,  260, 18))
+        add_wall(pygame.Rect(lx + 1900, lt + 180, 18, 200))
+        add_wall(pygame.Rect(lx + 2100, lt + 240, 220, 18))
+        add_wall(pygame.Rect(lx + 2450, lt + 80,  18, 260))
 
-        hz1 = Hazard((self.playfield.centerx + 190, self.playfield.centery - 80), color=self.palette.hazard)
-        hz2 = Hazard((self.playfield.centerx - 150, self.playfield.centery + 140), color=self.palette.hazard, spin_speed_dps=260)
-        self.hazards.add(hz1, hz2)
-        self.all_sprites.add(hz1, hz2)
+        cy = self.playfield.centery
+        for hx, hy, spd in [
+            (lx + 380,  cy - 80,  210.0),
+            (lx + 750,  cy + 120, 260.0),
+            (lx + 1150, cy - 100, 210.0),
+            (lx + 1550, cy + 80,  260.0),
+            (lx + 1950, cy - 60,  210.0),
+            (lx + 2350, cy + 100, 260.0),
+        ]:
+            hz = Hazard((hx, hy), color=self.palette.hazard, spin_speed_dps=spd)
+            self.hazards.add(hz)
+            self.all_sprites.add(hz)
 
-        for _ in range(10):
+        for _ in range(18):
             for __ in range(120):
                 x = self.rng.randint(self.playfield.left + 50, self.playfield.right - 50)
                 y = self.rng.randint(self.playfield.top + 50, self.playfield.bottom - 50)
@@ -222,6 +244,12 @@ class Game:
                 self.coins.add(candidate)
                 self.all_sprites.add(candidate)
                 break
+
+        self.tile_manager = TileManager(
+            self.playfield,
+            panel_color=self.palette.panel,
+            rng=self.rng,
+        )
 
         if not keep_state:
             self.state = "play"
@@ -411,6 +439,12 @@ class Game:
         for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill=False):
             self._apply_damage(hz.rect)
 
+        for tile in self.tile_manager.tiles:
+            if tile.is_deadly and tile.rect.colliderect(self.player.rect):
+                self._apply_damage(tile.rect)
+                break
+
+        self.tile_manager.update(dt)
         self.coins.update(dt)
         self.hazards.update(dt)
         self.player.update(dt)
@@ -421,13 +455,15 @@ class Game:
             self.state = "play"
 
     def _camera_offset(self) -> tuple[int, int]:
-        if not self.cue_shake or self._shake_for <= 0:
-            return (0, 0)
-        strength = _clamp(self._shake_for / 0.18, 0.0, 1.0)
-        max_px = 10 * strength
-        ox = int(self.rng.uniform(-max_px, max_px))
-        oy = int(self.rng.uniform(-max_px, max_px))
-        return (ox, oy)
+        target = self.player.pos.x - self.SCREEN_W // 2
+        scroll_x = max(0.0, min(float(self.WORLD_W - self.SCREEN_W), target))
+        ox, oy = 0, 0
+        if self.cue_shake and self._shake_for > 0:
+            strength = _clamp(self._shake_for / 0.18, 0.0, 1.0)
+            max_px = 10 * strength
+            ox = int(self.rng.uniform(-max_px, max_px))
+            oy = int(self.rng.uniform(-max_px, max_px))
+        return (-int(scroll_x) + ox, oy)
 
     def draw(self) -> None:
         self.screen.fill(self.palette.bg)
@@ -441,7 +477,10 @@ class Game:
 
         cam = self._camera_offset()
 
-        pygame.draw.rect(self.screen, self.palette.panel, self.playfield)
+        pygame.draw.rect(self.screen, self.palette.panel,
+                         pygame.Rect(0, self.HUD_H, self.SCREEN_W, self.SCREEN_H - self.HUD_H))
+
+        self.tile_manager.draw(self.screen, cam)
 
         for wall in self.walls:
             pygame.draw.rect(self.screen, wall.color, wall.rect.move(cam))
@@ -485,7 +524,7 @@ class Game:
 
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
         s = self.big_font.render(text, True, color)
-        r = s.get_rect(center=(self.playfield.centerx, y))
+        r = s.get_rect(center=(self.SCREEN_W // 2, y))
         self.screen.blit(s, r)
 
 
