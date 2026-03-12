@@ -187,7 +187,7 @@ class Game:
         self.particles.clear()
 
         self.player = Player(
-            (self.playfield.left + 200, self.playfield.centery),
+            (self.playfield.left + 100, self.playfield.centery),
             color=self.palette.player,
         )
         self.all_sprites.add(self.player)
