@@ -149,7 +149,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | gameover
+        self.state = "title"  # title | play | game_over | paused
 
         self.cue_flash = True
         self.cue_shake = True
@@ -292,7 +292,7 @@ class Game:
             elif self.state == "paused":
                 self.state = "play"
 
-        if self.state in {"title", "gameover"} and event.key == pygame.K_RETURN:
+        if self.state in {"title", "game_over"} and event.key == pygame.K_RETURN:
             self._reset_level(keep_state=True)
             self.state = "play"
 
@@ -398,7 +398,7 @@ class Game:
         self._cue_hit(source_rect)
 
         if self.player.hp <= 0:
-            self.state = "gameover"
+            self.state = "game_over"
 
     def _cue_game_over(self) -> None:
         if self.cue_shake:
@@ -521,7 +521,7 @@ class Game:
 
         if self.state == "title":
             self._draw_centered("Press Enter to Start", y=self.playfield.centery, color=self.palette.text)
-        elif self.state == "gameover":
+        elif self.state == "game_over":
             self._draw_centered("Game Over — Press Enter", y=self.playfield.centery, color=self.palette.text)
         elif self.state == "paused": 
             self._draw_centered("Paused — Press P to resume.", y=self.playfield.centery, color=self.palette.text)
