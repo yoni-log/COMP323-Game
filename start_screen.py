@@ -35,7 +35,7 @@ clock = pygame.time.Clock()
 
 
 # --- Fonts ---
-font_title  = pygame.font.SysFont("impact", 96, bold=True)
+font_title  = pygame.font.SysFont("impact", 96, bold=False)
 font_sub    = pygame.font.SysFont("impact", 28)
 font_prompt = pygame.font.SysFont("couriernew", 22, bold=True)
 font_ctrl   = pygame.font.SysFont("couriernew", 18)
