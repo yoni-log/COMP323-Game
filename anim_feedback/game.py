@@ -6,90 +6,14 @@ import array
 
 import pygame
 
-
-@dataclass(frozen=True)
-class Palette:
-    bg: pygame.Color = field(default_factory=lambda: pygame.Color("#1e222a"))
-    panel: pygame.Color = field(default_factory=lambda: pygame.Color("#2a303c"))
-    text: pygame.Color = field(default_factory=lambda: pygame.Color("#e5e9f0"))
-    subtle: pygame.Color = field(default_factory=lambda: pygame.Color("#a3adbf"))
-
-    player: pygame.Color = field(default_factory=lambda: pygame.Color("#88c0d0"))
-    coin: pygame.Color = field(default_factory=lambda: pygame.Color("#ebcb8b"))
-    hazard: pygame.Color = field(default_factory=lambda: pygame.Color("#bf616a"))
-    particle: pygame.Color = field(default_factory=lambda: pygame.Color("#a3be8c"))
-    wall: pygame.Color = field(default_factory=lambda: pygame.Color("#4c566a"))
-
+from .animation import Animation
+from .palette import Palette
+from .particle import Particle
+from .coin import *
+from .map import *
 
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
-
-
-class Animation:
-    def __init__(self, frames: list[pygame.Surface], *, fps: float) -> None:
-        if not frames:
-            raise ValueError("Animation needs at least 1 frame")
-        self.frames = frames
-        self.frame_dt = 1.0 / fps
-        self.t = 0.0
-        self.i = 0
-
-    def reset(self) -> None:
-        self.t = 0.0
-        self.i = 0
-
-    def update(self, dt: float) -> None:
-        self.t += dt
-        while self.t >= self.frame_dt:
-            self.t -= self.frame_dt
-            self.i = (self.i + 1) % len(self.frames)
-
-    @property
-    def image(self) -> pygame.Surface:
-        return self.frames[self.i]
-
-
-@dataclass
-class Particle:
-    pos: pygame.Vector2
-    vel: pygame.Vector2
-    radius: float
-    color: pygame.Color
-    life: float
-    ttl: float
-
-    def update(self, dt: float) -> None:
-        self.life = max(0.0, self.life - dt)
-        self.pos += self.vel * dt
-
-    @property
-    def alive(self) -> bool:
-        return self.life > 0
-
-class Wall(pygame.sprite.Sprite):
-    def __init__(self, rect: pygame.Rect, color: pygame.Color) -> None:
-        super().__init__()
-        self.rect = rect.copy()
-        self.color = color
-
-
-class Coin(pygame.sprite.Sprite):
-    def __init__(
-        self,
-        center: tuple[int, int],
-        *,
-        color: pygame.Color,
-    ) -> None:
-        super().__init__()
-        self.anim = Animation(_make_coin_frames(color), fps=10.0)
-        self.image = self.anim.image
-        self.rect = self.image.get_rect(center=center)
-
-    def update(self, dt: float) -> None:
-        self.anim.update(dt)
-        center = self.rect.center
-        self.image = self.anim.image
-        self.rect = self.image.get_rect(center=center)
 
 # Only square wave tones are supported
 class Tone(pygame.mixer.Sound):
@@ -563,30 +487,6 @@ class Game:
         s = self.big_font.render(text, True, color)
         r = s.get_rect(center=(self.playfield.centerx, y))
         self.screen.blit(s, r)
-
-
-def _make_coin_frames(color: pygame.Color) -> list[pygame.Surface]:
-    frames: list[pygame.Surface] = []
-
-    for i in range(6):
-        pulse = 1.0 + 0.08 * (1.0 if i % 2 == 0 else -1.0)
-        w = int(round(26 * pulse))
-        h = int(round(26 * pulse))
-
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        cx, cy = w // 2, h // 2
-        r = min(cx, cy) - 2
-
-        pygame.draw.circle(surf, color, (cx, cy), r)
-        pygame.draw.circle(surf, pygame.Color("#000000"), (cx, cy), r, 2)
-
-        sparkle = pygame.Color("#ffffff")
-        sparkle.a = 180
-        pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
-
-        frames.append(surf)
-
-    return frames
 
 
 def _make_hazard_surface(size: int, color: pygame.Color) -> pygame.Surface:
