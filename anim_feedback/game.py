@@ -197,9 +197,10 @@ class Game:
             self.walls.add(wall)
             self.all_sprites.add(wall)
 
+        # t was 16 originally
         t = 16
         add_wall(pygame.Rect(self.playfield.left, self.playfield.top, self.playfield.width, t))
-        add_wall(pygame.Rect(self.playfield.left, self.playfield.bottom - t, self.playfield.width, t))
+        add_wall(pygame.Rect(self.playfield.left, self.playfield.bottom - 4, self.playfield.width, 20))
         add_wall(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
         add_wall(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
 
