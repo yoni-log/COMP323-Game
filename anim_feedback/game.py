@@ -128,7 +128,8 @@ class Player(pygame.sprite.Sprite):
 class Game:
     fps = 60
 
-    SCREEN_W, SCREEN_H = 960, 540
+    # Match the start screen resolution so there is no size jump
+    SCREEN_W, SCREEN_H = 900, 600
     WORLD_W = 2880
     HUD_H = 56
     PADDING = 12
@@ -477,9 +478,8 @@ class Game:
         hud_rect = pygame.Rect(0, 0, self.SCREEN_W, self.HUD_H)
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
-        cues = f"Cues: [1]flash={'on' if self.cue_flash else 'off'}  [2]shake={'on' if self.cue_shake else 'off'}  [3]hitstop={'on' if self.cue_hitstop else 'off'}  [4]particles={'on' if self.cue_particles else 'off'}"
-        self._draw_text(f"HP {self.player.hp}   Score {self.player.score}", (12, 10), self.palette.text)
-        self._draw_text(cues, (12, 32), self.palette.subtle)
+        # Clean HUD: just show the core game info
+        self._draw_text(f"HP {self.player.hp}   Score {self.player.score}", (12, 16), self.palette.text)
 
         cam = self._camera_offset()
 

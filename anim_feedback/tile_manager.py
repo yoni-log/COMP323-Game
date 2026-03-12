@@ -48,7 +48,8 @@ class TileManager:
                 tile.fade = min(1.0, tile.fade + dt / FADE_DURATION)
 
     def draw(self, surface: pygame.Surface, cam: tuple[int, int]) -> None:
-        pc = self.panel_color
+        # Bright base color for tiles so they contrast clearly with the darker border
+        base = pygame.Color("#ffdc64")
         sw = surface.get_width()
         for tile in self.tiles:
             screen_rect = tile.rect.move(cam)
@@ -56,9 +57,11 @@ class TileManager:
             if screen_rect.right < 0 or screen_rect.left > sw:
                 continue
             f = tile.fade
-            r = int(pc.r * (1.0 - f))
-            g = int(pc.g * (1.0 - f))
-            b = int(pc.b * (1.0 - f))
+            # Fade from bright yellow to black as the tile crumbles
+            r = int(base.r * (1.0 - f))
+            g = int(base.g * (1.0 - f))
+            b = int(base.b * (1.0 - f))
             pygame.draw.rect(surface, (r, g, b), screen_rect)
-            border = (max(0, r - 18), max(0, g - 18), max(0, b - 18))
+            # Use the panel color as a consistent darker border for clear separation
+            border = (self.panel_color.r, self.panel_color.g, self.panel_color.b)
             pygame.draw.rect(surface, border, screen_rect, 1)
