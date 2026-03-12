@@ -480,6 +480,7 @@ class Game:
 
         # Clean, high-contrast HUD
         self._draw_text(f"HP {self.player.hp}   Score {self.player.score}", (12, 16), self.palette.text)
+        self._draw_text(f"Collect all coins to escape the level!", (635, 16), self.palette.text)
 
         cam = self._camera_offset()
 
@@ -520,11 +521,13 @@ class Game:
                 pygame.draw.rect(self.screen, pygame.Color("#bf616a"), hz.rect.move(cam), 2)
 
         if self.state == "title":
-            self._draw_centered("Press Enter to Start", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered("Press Enter to Start.", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered("Press P to pause or view controls.", y=self.playfield.centery + 40, color=self.palette.text)
         elif self.state == "game_over":
             self._draw_centered("Game Over — Press Enter", y=self.playfield.centery, color=self.palette.text)
         elif self.state == "paused": 
             self._draw_centered("Paused — Press P to resume.", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered("Use arrow keys or WASD to move.", y=self.playfield.centery + 40, color=self.palette.text)
 
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
         # Slight shadow behind text for readability over busy backgrounds

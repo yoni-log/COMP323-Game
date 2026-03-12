@@ -158,12 +158,11 @@ def draw_prompt(surface, tick):
 
 
 # --- Controls panel ---
-CONTROLS = [
-   ("MOVE",  "← →  /  A D"),
-   ("JUMP",  "SPACE  /  W"),
-   ("DASH",  "SHIFT"),
-]
+CONTROLS = [("MOVE",  "WASD or Arrow Keys"),]
 
+# Not implemented yet
+# ("JUMP",  "SPACE  /  W"),
+# ("DASH",  "SHIFT")
 
 def draw_controls(surface):
    panel_w, panel_h = 360, 110

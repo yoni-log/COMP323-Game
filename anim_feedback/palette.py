@@ -11,7 +11,7 @@ class Palette:
 
     # Neutral, generic player color
     player: pygame.Color = field(default_factory=lambda: pygame.Color("#5faad0"))
-    coin: pygame.Color = field(default_factory=lambda: pygame.Color("#ffc83c"))
+    coin: pygame.Color = field(default_factory=lambda: pygame.Color("#cd7f32"))
     hazard: pygame.Color = field(default_factory=lambda: pygame.Color("#c83c14"))
     particle: pygame.Color = field(default_factory=lambda: pygame.Color("#ffdc64"))
     wall: pygame.Color = field(default_factory=lambda: pygame.Color("#502a0c"))
