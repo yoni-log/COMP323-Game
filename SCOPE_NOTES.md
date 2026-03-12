@@ -1,0 +1,7 @@
+# Scope Note
+
+**What's In:** Side-scrolling survival platformer with a collapsing tile floor that serves as the central threat, player movement via direct key checks (MOVE_LEFT, MOVE_RIGHT, MOVE_UP, MOVE_DOWN — arrow keys and WASD), coin pickups (18 per level) with particle feedback, spinning hazards (6 per level) with knockback, a health system (3 HP), invincibility frames after damage, and a scrolling camera that follows the player across a 2880px wide world. **Discrete cue system:** four toggleable feedback cues — flash, shake, hitstop, and particles — controllable with keys 1–4 during play. HUD displays HP and score. Pause state toggleable with P. Game over and restart flow via Enter. Tone feedback for coin pickup, player hit, and game over (square wave, gracefully skipped if no audio device). requirements.txt and runnable package layout for submission.
+
+**What's Out:** No dash mechanic, no feel presets, no moving enemy AI or wave system, no power-ups, no high-score persistence, no multiple levels or difficulty settings, no sound music or background audio. Scope is one complete survival loop with a collapsing floor, hazards, coin collection, and clear feedback cues.
+
+**Player Experience Goal:** The player should feel constant pressure from the collapsing floor while navigating hazards and chasing coins — movement should feel responsive, damage should feel readable through the cue system, and each run should end with a clear game over and an immediate option to restart.
