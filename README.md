@@ -15,7 +15,7 @@ Restart: Restart:  Enter  (on Game Over screen)
 Quit: Quit:  ESC
 
 What's Included
-Collapsing floor mechanic — scrolling danger zone that chases the player
+A side—scrolling danger "zone" that follows the player from left to right.
 Full movement system: running, jumping, and dashing with cooldown
 Coin pickups with risk-reward positioning
 Health and damage system with HUD display
