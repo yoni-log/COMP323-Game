@@ -1,16 +1,13 @@
+import math
 import pygame
 import random
-import math
 import sys
 
-
 pygame.init()
-
 
 # --- Constants ---
 WIDTH, HEIGHT = 900, 600
 FPS = 60
-
 
 # Colors
 BG_TOP       = (15, 10, 30)
@@ -28,11 +25,9 @@ PROMPT_COLOR = (255, 255, 255)
 DIM_COLOR    = (180, 180, 180)
 HIGHLIGHT    = (255, 200, 60)
 
-
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Don't Crumble")
 clock = pygame.time.Clock()
-
 
 # --- Fonts ---
 font_title  = pygame.font.SysFont("impact", 96, bold=False)
@@ -40,12 +35,10 @@ font_sub    = pygame.font.SysFont("impact", 28)
 font_prompt = pygame.font.SysFont("couriernew", 22, bold=True)
 font_ctrl   = pygame.font.SysFont("couriernew", 18)
 
-
 # --- Falling Tile Particles ---
 class FallingTile:
    def __init__(self, x=None):
        self.reset(x)
-
 
    def reset(self, x=None):
        self.w = random.randint(48, 90)
@@ -60,7 +53,6 @@ class FallingTile:
        self.alpha = random.randint(160, 230)
        self.cracks = self._gen_cracks()
 
-
    def _gen_cracks(self):
        cracks = []
        for _ in range(random.randint(1, 3)):
@@ -71,14 +63,12 @@ class FallingTile:
            cracks.append((sx, sy, ex, ey))
        return cracks
 
-
    def update(self):
        self.y  += self.vy
        self.x  += self.vx
        self.rot += self.rot_speed
        if self.y > HEIGHT + 60:
            self.reset()
-
 
    def draw(self, surface):
        tile_surf = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
@@ -90,9 +80,6 @@ class FallingTile:
        rect = rotated.get_rect(center=(int(self.x), int(self.y)))
        surface.blit(rotated, rect)
 
-
-
-
 # --- Background gradient ---
 def draw_gradient(surface):
    for y in range(HEIGHT):
@@ -101,9 +88,6 @@ def draw_gradient(surface):
        g = int(BG_TOP[1] + (BG_BOTTOM[1] - BG_TOP[1]) * t)
        b = int(BG_TOP[2] + (BG_BOTTOM[2] - BG_TOP[2]) * t)
        pygame.draw.line(surface, (r, g, b), (0, y), (WIDTH, y))
-
-
-
 
 # --- Ground crack line at bottom ---
 def draw_ground_cracks(surface, tick):
@@ -128,9 +112,6 @@ def draw_ground_cracks(surface, tick):
            pygame.draw.rect(surface, (80, 42, 12), rect, border_radius=2)
            pygame.draw.rect(surface, (55, 28, 8), rect, 1, border_radius=2)
 
-
-
-
 # --- Title with shake effect ---
 def draw_title(surface, tick):
    shake_x = int(math.sin(tick * 0.18) * 2)
@@ -145,17 +126,11 @@ def draw_title(surface, tick):
    sub = font_sub.render("A SURVIVAL PLATFORMER", True, (200, 140, 60))
    surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 238))
 
-
-
-
 # --- Blinking prompt ---
 def draw_prompt(surface, tick):
    if (tick // 35) % 2 == 0:
        prompt = font_prompt.render("PRESS  ENTER  TO  START", True, PROMPT_COLOR)
        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 310))
-
-
-
 
 # --- Controls panel ---
 CONTROLS = [("MOVE",  "WASD or Arrow Keys"),]
@@ -183,31 +158,30 @@ def draw_controls(surface):
        surface.blit(action_surf, (panel_x + 24, y))
        surface.blit(keys_surf,   (panel_x + panel_w - keys_surf.get_width() - 24, y))
 
-
-
-
 # --- Main loop ---
 def run_start_screen():
-   tiles = [FallingTile() for _ in range(22)]
-   tick = 0
-   while True:
-       clock.tick(FPS)
-       tick += 1
-       for event in pygame.event.get():
-           if event.type == pygame.QUIT:
-               pygame.quit()
-               sys.exit()
-           if event.type == pygame.KEYDOWN:
-               if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                   return  # Hand off to main game
-       draw_gradient(screen)
-       for tile in tiles:
-           tile.update()
-           tile.draw(screen)
-       draw_ground_cracks(screen, tick)
-       draw_title(screen, tick)
-       draw_prompt(screen, tick)
-       draw_controls(screen)
-       pygame.display.flip()
+    tiles = [FallingTile() for _ in range(22)]
+    tick = 0
+    while True:
+        clock.tick(FPS)
+        tick += 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return  # Hand off to main game
+                if event.key == pygame.K_ESCAPE:
+                    pygame.event.post(pygame.event.Event(pygame.QUIT))   # Close the window
+        draw_gradient(screen)
+        for tile in tiles:
+            tile.update()
+            tile.draw(screen)
+        draw_ground_cracks(screen, tick)
+        draw_title(screen, tick)
+        draw_prompt(screen, tick)
+        draw_controls(screen)
+        pygame.display.flip()
 
 
