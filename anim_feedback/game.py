@@ -377,8 +377,8 @@ class Game:
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
         # Clean, high-contrast HUD
-        self._draw_text(f"HP {self.player.hp}   Score {self.player.score}", (12, 16), self.palette.text)
-        self._draw_text(f"Collect all coins to escape the level!", (635, 16), self.palette.text)
+        self._draw_text(f"HP: {self.player.hp}   Score: {self.player.score}", (12, 16), self.palette.text)
+        self._draw_text(f"Escape the disappearing tiles behind you and collect all coins to escape the level!", (310, 16), self.palette.text)
 
         cam = self._camera_offset()
 
