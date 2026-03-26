@@ -16,6 +16,7 @@ from .tile_manager import *
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
+TARGET_SCORE = 18
 
 class Game:
     fps = 60
@@ -42,7 +43,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | game_over | paused
+        self.state = "title"  # title | play | game_over | won | paused
 
         self.cue_flash = True
         self.cue_shake = True
@@ -122,7 +123,7 @@ class Game:
             self.hazards.add(hz)
             self.all_sprites.add(hz)
 
-        for _ in range(18):
+        for _ in range(TARGET_SCORE):
             for __ in range(120):
                 x = self.rng.randint(self.playfield.left + 50, self.playfield.right - 50)
                 y = self.rng.randint(self.playfield.top + 50, self.playfield.bottom - 50)
@@ -186,7 +187,7 @@ class Game:
             elif self.state == "paused":
                 self.state = "play"
 
-        if self.state in {"title", "game_over"} and event.key == pygame.K_RETURN:
+        if self.state in {"title", "game_over", "won"} and event.key == pygame.K_RETURN:
             self._reset_level(keep_state=True)
             self.state = "play"
 
@@ -292,9 +293,10 @@ class Game:
         self._cue_hit(source_rect)
 
         if self.player.hp <= 0:
-            self.state = "game_over"
+            self._cue_game_over()
 
     def _cue_game_over(self) -> None:
+        self.state = "game_over"
         if self.cue_shake:
             self._shake_for = max(self._shake_for, 0.20)
         self.game_over_tone.play()
@@ -349,10 +351,13 @@ class Game:
         self.hazards.update(dt)
         self.player.update(dt)
 
-        if len(self.coins) == 0:
-            self._cue_game_over()
-            self._reset_level(keep_state=True)
-            self.state = "play"
+        # if len(self.coins) == 0:
+        #     self._cue_game_over()
+        #     self._reset_level(keep_state=True)
+        #     self.state = "play"
+
+        if self.player.score >= TARGET_SCORE:
+            self.state = "won"
 
     def _camera_offset(self) -> tuple[int, int]:
         target = self.player.pos.x - self.SCREEN_W // 2
@@ -418,6 +423,8 @@ class Game:
             self._draw_centered("Press P to pause or view controls.", y=self.playfield.centery + 40, color=self.palette.text)
         elif self.state == "game_over":
             self._draw_centered("Game Over — Press Enter", y=self.playfield.centery, color=self.palette.text)
+        elif self.state == "won":
+            self._draw_centered("You Escaped! — Press Enter", y=self.playfield.centery, color=self.palette.text)
         elif self.state == "paused": 
             self._draw_centered("Paused — Press P to resume.", y=self.playfield.centery, color=self.palette.text)
             self._draw_centered("Use arrow keys or WASD to move.", y=self.playfield.centery + 40, color=self.palette.text)
