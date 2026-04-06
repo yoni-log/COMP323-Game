@@ -1,4 +1,3 @@
-
 # Dimensions
 SCREEN_W, SCREEN_H = 900, 600
 WORLD_W = 2880
@@ -18,3 +17,6 @@ TARGET_SCORE = 18         # number of coins the player must collect to finish th
 TILE_SIZE = 64
 FADE_DURATION = 1.25      # seconds from crumble start to fully black
 DEADLY_AT = 0.5           # fade progress at which tile starts hurting the player
+
+# Target score and tile spawning variables should change 
+# to increase the game's difficulty as the player levels up

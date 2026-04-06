@@ -35,5 +35,3 @@ def _make_hazard_surface(size: int, color: pygame.Color) -> pygame.Surface:
     pygame.draw.polygon(surf, color, pts)
     pygame.draw.polygon(surf, pygame.Color("#000000"), pts, 2)
     return surf
-
-

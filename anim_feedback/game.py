@@ -8,7 +8,7 @@ from .audio import *
 from .coin import *
 from .game_config import *
 from .hazard import *
-from .map import *
+from .levels import *
 from .palette import *
 from .particle import *
 from .player import *
@@ -61,6 +61,9 @@ class Game:
         self._shake_for = 0.0
         self._hitstop_for = 0.0
 
+        self.level_data = []
+        self.current_level = 1
+
         self._reset_level(keep_state=True)
 
     def _reset_level(self, *, keep_state: bool = False) -> None:
@@ -88,33 +91,19 @@ class Game:
         add_wall(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
         add_wall(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
 
+        self.level_data = LEVELS[self.current_level - 1]
         lx = self.playfield.left
         lt = self.playfield.top
-        add_wall(pygame.Rect(lx + 180,  lt + 110, 18, 240))
-        add_wall(pygame.Rect(lx + 420,  lt + 40,  18, 240))
-        add_wall(pygame.Rect(lx + 560,  lt + 240, 260, 18))
-        add_wall(pygame.Rect(lx + 800,  lt + 80,  18, 200))
-        add_wall(pygame.Rect(lx + 1000, lt + 160, 220, 18))
-        add_wall(pygame.Rect(lx + 1300, lt + 100, 18, 280))
-        add_wall(pygame.Rect(lx + 1600, lt + 60,  260, 18))
-        add_wall(pygame.Rect(lx + 1900, lt + 180, 18, 200))
-        add_wall(pygame.Rect(lx + 2100, lt + 240, 220, 18))
-        add_wall(pygame.Rect(lx + 2450, lt + 80,  18, 260))
+        for x, y, w, h in self.level_data["walls"]:
+            add_wall(pygame.Rect(lx + x, lt + y, w, h))
 
         cy = self.playfield.centery
-        for hx, hy, spd in [
-            (lx + 380,  cy - 80,  210.0),
-            (lx + 750,  cy + 120, 260.0),
-            (lx + 1150, cy - 100, 210.0),
-            (lx + 1550, cy + 80,  260.0),
-            (lx + 1950, cy - 60,  210.0),
-            (lx + 2350, cy + 100, 260.0),
-        ]:
-            hz = Hazard((hx, hy), color=self.palette.hazard, spin_speed_dps=spd)
+        for hx, hy, spd in self.level_data["hazards"]:
+            hz = Hazard((lx + hx, cy + hy), color = self.palette.hazard, spin_speed_dps = spd)
             self.hazards.add(hz)
             self.all_sprites.add(hz)
 
-        for _ in range(TARGET_SCORE):
+        for _ in range(self.level_data["coins"]):
             for __ in range(120):
                 x = self.rng.randint(self.playfield.left + 50, self.playfield.right - 50)
                 y = self.rng.randint(self.playfield.top + 50, self.playfield.bottom - 50)
@@ -133,8 +122,8 @@ class Game:
 
         self.tile_manager = TileManager(
             self.playfield,
-            panel_color=self.palette.panel,
-            rng=self.rng,
+            panel_color = self.palette.panel,
+            rng = self.rng,
         )
 
         if not keep_state:
@@ -179,7 +168,8 @@ class Game:
                 self.state = "play"
 
         if self.state in {"title", "game_over", "won"} and event.key == pygame.K_RETURN:
-            self._reset_level(keep_state=True)
+            self.current_level = 1
+            self._reset_level(keep_state = True)
             self.state = "play"
 
     def _read_move(self) -> pygame.Vector2:
@@ -347,8 +337,14 @@ class Game:
         #     self._reset_level(keep_state=True)
         #     self.state = "play"
 
-        if self.player.score >= TARGET_SCORE:
-            self.state = "won"
+        if self.player.score >= self.level_data["coins"]:
+            self.current_level += 1
+
+            if self.current_level > len(LEVELS):
+                self.state = "won"   # finished all levels
+            else:
+                self._reset_level(keep_state=True)
+                self.state = "play"
 
     def _camera_offset(self) -> tuple[int, int]:
         target = self.player.pos.x - SCREEN_W // 2
@@ -368,8 +364,12 @@ class Game:
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
         # Clean, high-contrast HUD
-        self._draw_text(f"HP: {self.player.hp}   Score: {self.player.score}", (12, 16), self.palette.text)
-        self._draw_text(f"Escape the disappearing tiles behind you and collect all coins to escape the level!", (310, 16), self.palette.text)
+        self._draw_text(f"Level: {self.current_level}   Score: {self.player.score}   HP: {self.player.hp}", 
+                        (12, 16), 
+                        self.palette.text)
+        self._draw_text(f"Escape the disappearing tiles behind you and collect all coins to escape the level!", 
+                        (310, 16), 
+                        self.palette.text)
 
         cam = self._camera_offset()
 
