@@ -2,10 +2,7 @@ import random
 import pygame
 from dataclasses import dataclass
 
-TILE_SIZE = 64
-FADE_DURATION = 1.25  # seconds from crumble start to fully black
-DEADLY_AT = 0.5       # fade progress at which tile starts hurting the player
-
+from .game_config import *
 
 @dataclass
 class FloorTile:

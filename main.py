@@ -1,7 +1,8 @@
 import pygame
 
-from anim_feedback.game import Game
-from start_screen import run_start_screen
+from anim_feedback.game import *
+from anim_feedback.game_config import *
+from start_screen import *
 
 
 def main() -> None:
@@ -15,7 +16,7 @@ def main() -> None:
 
     running = True
     while running:
-        dt = clock.tick(game.fps) / 1000.0
+        dt = clock.tick(FPS) / 1000.0
         dt = min(dt, 0.05)
 
         for event in pygame.event.get():

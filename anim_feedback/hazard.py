@@ -1,4 +1,3 @@
-
 import pygame
 
 class Hazard(pygame.sprite.Sprite):

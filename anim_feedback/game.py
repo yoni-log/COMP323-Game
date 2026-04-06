@@ -6,6 +6,7 @@ import pygame
 
 from .audio import *
 from .coin import *
+from .game_config import *
 from .hazard import *
 from .map import *
 from .palette import *
@@ -16,30 +17,20 @@ from .tile_manager import *
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
-TARGET_SCORE = 18
-
 class Game:
-    fps = 60
-
-    # Match the start screen resolution so there is no size jump
-    SCREEN_W, SCREEN_H = 900, 600
-    WORLD_W = 2880
-    HUD_H = 56
-    PADDING = 12
-
     def __init__(self) -> None:
         self.palette = Palette()
 
-        self.screen = pygame.display.set_mode((self.SCREEN_W, self.SCREEN_H))
+        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
         self.font = pygame.font.SysFont(None, 22)
         self.big_font = pygame.font.SysFont(None, 40)
 
-        self.screen_rect = pygame.Rect(0, 0, self.SCREEN_W, self.SCREEN_H)
+        self.screen_rect = pygame.Rect(0, 0, SCREEN_W, SCREEN_H)
         self.playfield = pygame.Rect(
-            self.PADDING,
-            self.HUD_H + self.PADDING,
-            self.WORLD_W - 2 * self.PADDING,
-            self.SCREEN_H - self.HUD_H - 2 * self.PADDING,
+            PADDING,
+            HUD_H + PADDING,
+            WORLD_W - 2 * PADDING,
+            SCREEN_H - HUD_H - 2 * PADDING
         )
 
         self.debug = False
@@ -264,7 +255,7 @@ class Game:
 
     def _cue_hit(self, source_rect: pygame.Rect) -> None:
         if self.cue_flash:
-            self.player.flash_for = 0.18
+            self.player.flash_for = FLASH_DURATION
 
         if self.cue_hitstop:
             self._hitstop_for = max(self._hitstop_for, 0.06)
@@ -282,7 +273,7 @@ class Game:
             return
 
         self.player.hp -= 1
-        self.player.invincible_for = 0.85
+        self.player.invincible_for = INVINCIBLE_FOR
 
         push = pygame.Vector2(self.player.rect.center) - pygame.Vector2(source_rect.center)
         if push.length_squared() == 0:
@@ -360,8 +351,8 @@ class Game:
             self.state = "won"
 
     def _camera_offset(self) -> tuple[int, int]:
-        target = self.player.pos.x - self.SCREEN_W // 2
-        scroll_x = max(0.0, min(float(self.WORLD_W - self.SCREEN_W), target))
+        target = self.player.pos.x - SCREEN_W // 2
+        scroll_x = max(0.0, min(float(WORLD_W - SCREEN_W), target))
         ox, oy = 0, 0
         if self.cue_shake and self._shake_for > 0:
             strength = _clamp(self._shake_for / 0.18, 0.0, 1.0)
@@ -373,7 +364,7 @@ class Game:
     def draw(self) -> None:
         self.screen.fill(self.palette.bg)
 
-        hud_rect = pygame.Rect(0, 0, self.SCREEN_W, self.HUD_H)
+        hud_rect = pygame.Rect(0, 0, SCREEN_W, HUD_H)
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
         # Clean, high-contrast HUD
@@ -382,8 +373,7 @@ class Game:
 
         cam = self._camera_offset()
 
-        pygame.draw.rect(self.screen, self.palette.panel,
-                         pygame.Rect(0, self.HUD_H, self.SCREEN_W, self.SCREEN_H - self.HUD_H))
+        pygame.draw.rect(self.screen, self.palette.panel, pygame.Rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H))
 
         self.tile_manager.draw(self.screen, cam)
 
@@ -440,8 +430,8 @@ class Game:
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
         shadow = self.big_font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.big_font.render(text, True, color)
-        r_shadow = shadow.get_rect(center=(self.SCREEN_W // 2, y + 1))
-        r = s.get_rect(center=(self.SCREEN_W // 2, y))
+        r_shadow = shadow.get_rect(center=(SCREEN_W // 2, y + 1))
+        r = s.get_rect(center=(SCREEN_W // 2, y))
         self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)
 

@@ -1,16 +1,10 @@
 import pygame
 
 from .animation import *
+from .game_config import *
 
 class Player(pygame.sprite.Sprite):
-    COLLECT_DURATION = 0.5
-
-    def __init__(
-        self,
-        center: tuple[int, int],
-        *,
-        color: pygame.Color,
-    ) -> None:
+    def __init__(self, center: tuple[int, int], *, color: pygame.Color) -> None:
         super().__init__()
 
         self.anims = _make_player_anims(color)
@@ -22,16 +16,15 @@ class Player(pygame.sprite.Sprite):
 
         self.pos = pygame.Vector2(self.rect.center)
         self.vel = pygame.Vector2(0, 0)
-        self.speed = 320.0
+        self.speed = PLAYER_SPEED
 
-        self.hp = 3
+        self.hp = PLAYER_HEALTH
         self.invincible_for = 0.0
 
         self.score = 0
 
-        self.flash_for = 0.0
-
         self.collect_for = 0.0
+        self.flash_for = 0.0
 
     @property
     def is_invincible(self) -> bool:
@@ -45,7 +38,7 @@ class Player(pygame.sprite.Sprite):
         self.anims[self.state].reset()
 
     def trigger_collect(self) -> None:
-        self.collect_for = self.COLLECT_DURATION
+        self.collect_for = COLLECT_DURATION
         self.set_state("collect")
 
     def update(self, dt: float) -> None:
