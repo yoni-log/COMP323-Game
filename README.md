@@ -2,7 +2,9 @@ Don't Crumble
 A reflex-driven survival platformer where the floor is always collapsing beneath you. Run, jump, and dash to stay alive as the ground crumbles — collect coins, manage your health, and survive as long as possible.
 
 How to Run
-1.  From this directory, install dependencies:
+
+1. From this directory, install dependencies:
+
 pip install -r requirements.txt
 2.  Run the game:
 python main.py

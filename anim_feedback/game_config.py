@@ -20,3 +20,10 @@ DEADLY_AT = 0.5           # fade progress at which tile starts hurting the playe
 
 # Target score and tile spawning variables should change 
 # to increase the game's difficulty as the player levels up
+
+# From level 2 onward: faster hazards and crumbling floor
+L2_HAZARD_SPEED_MULT = 1.55
+L2_TILE_FADE_MULT = 1.85
+L2_TILE_WAVE_MULT = 1.4
+# Inner right wall is 16px; player must reach this zone to count as "exit"
+EXIT_RIGHT_MARGIN = 22
