@@ -337,7 +337,7 @@ class Game:
         #     self._reset_level(keep_state=True)
         #     self.state = "play"
 
-        if self.player.score >= self.level_data["coins"]:
+        if self.player.score >= 1:  # set to 1 to make leveling up quick for playtesting
             self.current_level += 1
 
             if self.current_level > len(LEVELS):
