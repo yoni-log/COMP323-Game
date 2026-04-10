@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import random
 import pygame
+import random
 
 from .audio import Tone
 from .coin import Coin
 from .game_config import *
 from .hazard import Hazard
-from .levels import *
+from .levels import LEVELS
+from .level_utils import *
 from .palette import Palette
 from .particle import Particle
 from .player import Player
