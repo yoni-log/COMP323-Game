@@ -23,7 +23,7 @@ DEADLY_AT = 0.5           # fade progress at which tile starts hurting the playe
 
 # From level 2 onward: faster hazards and crumbling floor
 L2_HAZARD_SPEED_MULT = 1.55
-L2_TILE_FADE_MULT = 1.85
-L2_TILE_WAVE_MULT = 1.4
+L2_TILE_FADE_MULT = 1.05
+L2_TILE_WAVE_MULT = 1.2
 # Inner right wall is 16px; player must reach this zone to count as "exit"
 EXIT_RIGHT_MARGIN = 22

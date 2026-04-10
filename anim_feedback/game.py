@@ -68,13 +68,13 @@ class Game:
         self._reset_level(keep_state=True)
 
     def _hazard_speed_mult(self) -> float:
-        return L2_HAZARD_SPEED_MULT * self.current_level if self.current_level >= 2 else 1.0
+        return 0.8 + (0.2 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _tile_fade_mult(self) -> float:
-        return L2_TILE_FADE_MULT * self.current_level if self.current_level >= 2 else 1.0
+        return 0.9 + (0.05 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _tile_wave_mult(self) -> float:
-        return L2_TILE_WAVE_MULT * self.current_level if self.current_level >= 2 else 1.0
+        return 0.8 + (0.05 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _player_at_right_exit(self) -> bool:
         return self.player.rect.right >= self.playfield.right - EXIT_RIGHT_MARGIN
@@ -147,7 +147,7 @@ class Game:
 
         self.player = Player(
             (self.playfield.left + 100, self.playfield.centery),
-            color=self.palette.player,
+            color = self.palette.player,
         )
         self.all_sprites.add(self.player)
 
