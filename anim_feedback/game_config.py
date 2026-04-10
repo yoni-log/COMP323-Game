@@ -11,7 +11,6 @@ PLAYER_SPEED = 320
 INVINCIBLE_FOR = 0.85
 COLLECT_DURATION = 0.5
 FLASH_DURATION = 0.18     # controls player hit animation
-TARGET_SCORE = 18         # number of coins the player must collect to finish the level
 
 # Tile spawning
 TILE_SIZE = 64

@@ -3,15 +3,16 @@ from __future__ import annotations
 import random
 import pygame
 
-from .audio import *
-from .coin import *
+from .audio import Tone
+from .coin import Coin
 from .game_config import *
-from .hazard import *
+from .hazard import Hazard
 from .levels import *
-from .palette import *
-from .particle import *
-from .player import *
-from .tile_manager import *
+from .palette import Palette
+from .particle import Particle
+from .player import Player
+from .start_screen import *
+from .tile_manager import TileManager
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -35,7 +36,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | game_over | won | paused
+        self.state = "title"  # title | play | level_cleared | game_over | won | paused
 
         self.cue_flash = True
         self.cue_shake = True
@@ -65,7 +66,7 @@ class Game:
         self.level_data = []
         self.current_level = 1
 
-        self._reset_level(keep_state=True)
+        self._reset_level(keep_state = True)
 
     def _hazard_speed_mult(self) -> float:
         return 0.8 + (0.2 * self.current_level) if self.current_level >= 2 else 1.0
@@ -86,12 +87,30 @@ class Game:
             self.walls.add(wall)
             self.all_sprites.add(wall)
 
+        def add_finish_wall_rect(rect: pygame.Rect) -> None:
+            finish_wall = Wall(rect, self.palette.finish_wall)
+            self.walls.add(finish_wall)
+            self.all_sprites.add(finish_wall)
+
         # --- Border walls ---
-        t = 16
-        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.top, self.playfield.width, t))
-        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.bottom - 4, self.playfield.width, 20))
+        t = 20
+
+        # left: The x-coordinate of the top-left corner.
+        # top: The y-coordinate of the top-left corner.
+        # width: The horizontal dimension of the rectangle.
+        # height: The vertical dimension of the rectangle.
+
+        # Top wall
+        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.top, self.playfield.width + 12, t))
+        
+        # Bottom Wall
+        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.bottom - 8, self.playfield.width + 12, t))
+        
+        # Left Wall
         add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
-        add_wall_rect(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
+        
+        # Right Wall
+        add_finish_wall_rect(pygame.Rect(self.playfield.right - t, self.playfield.top, 2 * t, self.playfield.height + t))
 
         # --- TILE LEVEL ---
         grid = LEVELS[self.current_level - 1]
@@ -112,15 +131,15 @@ class Game:
                 elif tile == "H":
                     hz = Hazard(
                         (x, y),
-                        color=self.palette.hazard,
-                        spin_speed_dps=200 * self._hazard_speed_mult(),
+                        color = self.palette.hazard,
+                        spin_speed_dps = 200 * self._hazard_speed_mult(),
                     )
                     self.hazards.add(hz)
                     self.all_sprites.add(hz)
 
                 # --- COIN ---
                 elif tile == "C":
-                    coin = Coin((x, y), color=self.palette.coin)
+                    coin = Coin((x, y), color = self.palette.coin)
                     self.coins.add(coin)
                     self.all_sprites.add(coin)
 
@@ -195,12 +214,31 @@ class Game:
             elif self.state == "paused":
                 self.state = "play"
 
-        if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
-            if self.state == "level_cleared":
-                self._level_cleared()
-            else:
+        if self.state == "paused" and event.key == pygame.K_t:   # option to return to the title screen
+            self.state = "return_to_title_screen"
+
+        if self.state == "return_to_title_screen":
+            if event.key == pygame.K_y:
+                self.current_level = 1
                 self._reset_level(keep_state = True)
-            self.state = "play"
+                self.state = "title"
+                run_start_screen()
+            elif event.key == pygame.K_n:
+                self.state = "paused"
+        
+        if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
+            
+            if self.state == "level_cleared":
+                self.state = "play"
+                self._level_cleared()
+            
+            elif self.state == "won":
+                self.state = "title"
+                run_start_screen()
+            
+            else:
+                self.state = "play"
+                self._reset_level(keep_state = True)
 
     def _level_cleared(self) -> None:
         self.current_level += 1
@@ -250,7 +288,7 @@ class Game:
             self.player.pos.y += amount
             self.player.rect.centery = int(round(self.player.pos.y))
 
-        hits = pygame.sprite.spritecollide(self.player, self.walls, dokill=False)
+        hits = pygame.sprite.spritecollide(self.player, self.walls, dokill = False)
         if not hits:
             return
 
@@ -363,13 +401,13 @@ class Game:
         self._move_player_axis("x", self.player.vel.x * dt)
         self._move_player_axis("y", self.player.vel.y * dt)
 
-        picked = pygame.sprite.spritecollide(self.player, self.coins, dokill=True)
+        picked = pygame.sprite.spritecollide(self.player, self.coins, dokill = True)
         if picked:
             self.player.score += len(picked)
             self.player.trigger_collect()
             self._cue_coin(picked[0].rect)
 
-        for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill=False):
+        for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill = False):
             self._apply_damage(hz.rect)
 
         for tile in self.tile_manager.tiles:
@@ -409,12 +447,12 @@ class Game:
         self._draw_text(
             f"Level: {self.current_level}   Score: {self.player.score}   HP: {self.player.hp}",
             (12, 16),
-            self.palette.text,
+            self.palette.text
         )
         self._draw_text(
-            "Collect all coins, then reach the right edge to advance.",
-            (310, 16),
-            self.palette.text,
+            "Collect all the coins and reach the purple wall on the right edge to escape the level!",
+            (295, 16),
+            self.palette.text
         )
 
         cam = self._camera_offset()
@@ -454,18 +492,46 @@ class Game:
             for hz in self.hazards:
                 pygame.draw.rect(self.screen, pygame.Color("#bf616a"), hz.rect.move(cam), 2)
 
+        # --- Overlay text for various states ---
+
         if self.state == "title":
-            self._draw_centered("Press Enter to Start.", y=self.playfield.centery, color=self.palette.text)
-            self._draw_centered("Press P to pause or view controls.", y=self.playfield.centery + 40, color=self.palette.text)
+            self._draw_centered("Press Enter to Start.", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+            self._draw_centered("Press P to pause, view controls or return to title screen.", 
+                                y = self.playfield.centery + 40, 
+                                color = self.palette.text)
+        
         elif self.state == "level_cleared":
-            self._draw_centered(f"You cleared level {self.current_level}! — Press Enter", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered(f"You cleared Level {self.current_level}! — Press Enter", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+        
         elif self.state == "game_over":
-            self._draw_centered("Game Over — Press Enter", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered("Game Over — Press Enter", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+        
         elif self.state == "won":
-            self._draw_centered("You Escaped! — Press Enter", y=self.playfield.centery, color=self.palette.text)
+            self._draw_centered("You Escaped! — Press Enter to return to title screen.", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+        
         elif self.state == "paused":
-            self._draw_centered("Paused — Press P to resume.", y=self.playfield.centery, color=self.palette.text)
-            self._draw_centered("Use arrow keys or WASD to move.", y=self.playfield.centery + 40, color=self.palette.text)
+            self._draw_centered("Paused — Press P to resume or T to return to title screen.", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+            self._draw_centered("Use arrow keys or WASD to move.", 
+                                y = self.playfield.centery + 40, 
+                                color = self.palette.text)
+        
+        elif self.state == "return_to_title_screen":
+            self._draw_centered("Are you sure? All progress will be lost:", 
+                                y = self.playfield.centery, 
+                                color = self.palette.text)
+            self._draw_centered("Y - Yes, N - No", 
+                                y = self.playfield.centery + 40, 
+                                color = self.palette.text)
 
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
         shadow = self.font.render(text, True, pygame.Color(0, 0, 0, 180))

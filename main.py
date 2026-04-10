@@ -1,9 +1,8 @@
 import pygame
 
-from anim_feedback.game import *
+from anim_feedback.game import Game
 from anim_feedback.game_config import *
-from start_screen import *
-
+from anim_feedback.start_screen import *
 
 def main() -> None:
     pygame.init()
@@ -30,7 +29,6 @@ def main() -> None:
         pygame.display.flip()
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
