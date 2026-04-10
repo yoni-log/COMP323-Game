@@ -65,7 +65,7 @@ class Game:
         self._hitstop_for = 0.0
 
         self.level_data = []
-        self.current_level = 1
+        self.current_level = 1   # Change this value to test any level without having to start from Level 1
 
         self._reset_level(keep_state = True)
 
@@ -177,8 +177,8 @@ class Game:
             self.state = "play"
 
     def _advance_to_next_level(self) -> None:
-        self._pending_hp = self.player.hp
-        self._pending_score = self.player.score
+        self._pending_hp = PLAYER_HEALTH          # reset HP on level advance
+        self._pending_score = self.player.score   # maintain player score between levels
         self.state = "level_cleared"
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -234,6 +234,8 @@ class Game:
                 self._level_cleared()
             
             elif self.state == "won":
+                self.current_level = 1
+                self._reset_level(keep_state = True)
                 self.state = "title"
                 run_start_screen()
             
@@ -497,14 +499,17 @@ class Game:
 
         if self.state == "title":
             self._draw_centered("Press Enter to Start.", 
+                                y = self.playfield.centery - 40, 
+                                color = self.palette.text)
+            self._draw_centered("While playing, press P to pause,", 
                                 y = self.playfield.centery, 
                                 color = self.palette.text)
-            self._draw_centered("Press P to pause, view controls or return to title screen.", 
+            self._draw_centered("view controls, or return to title screen.", 
                                 y = self.playfield.centery + 40, 
                                 color = self.palette.text)
         
         elif self.state == "level_cleared":
-            self._draw_centered(f"You cleared Level {self.current_level}! — Press Enter", 
+            self._draw_centered(f"You cleared Level {self.current_level}! — Press Enter to Continue", 
                                 y = self.playfield.centery, 
                                 color = self.palette.text)
         
@@ -522,12 +527,12 @@ class Game:
             self._draw_centered("Paused — Press P to resume or T to return to title screen.", 
                                 y = self.playfield.centery, 
                                 color = self.palette.text)
-            self._draw_centered("Use arrow keys or WASD to move.", 
+            self._draw_centered("While playing, use arrow keys or WASD to move.", 
                                 y = self.playfield.centery + 40, 
                                 color = self.palette.text)
         
         elif self.state == "return_to_title_screen":
-            self._draw_centered("Are you sure? All progress will be lost:", 
+            self._draw_centered("Are you sure? All current progress will be lost:", 
                                 y = self.playfield.centery, 
                                 color = self.palette.text)
             self._draw_centered("Y - Yes, N - No", 
@@ -544,7 +549,9 @@ class Game:
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
         shadow = self.big_font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.big_font.render(text, True, color)
-        r_shadow = shadow.get_rect(center=(SCREEN_W // 2, y + 1))
-        r = s.get_rect(center=(SCREEN_W // 2, y))
+        r_shadow = shadow.get_rect(center = (SCREEN_W // 2, y + 1))
+        r = s.get_rect(center = (SCREEN_W // 2, y))
+        bg_rect = r.inflate(20, 10)
+        pygame.draw.rect(self.screen, pygame.Color(0, 0, 0), bg_rect)
         self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)

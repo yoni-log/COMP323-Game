@@ -1,4 +1,6 @@
 # Status: Complete
+# 18 coins, 8 hazards
+# Far right boundary of the level is at the hashtag (col 146-147)
 
 LEVEL = [
     "...............................W.........................................W..............................W....................................", 
