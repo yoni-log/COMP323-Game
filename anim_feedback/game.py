@@ -68,73 +68,77 @@ class Game:
         self._reset_level(keep_state=True)
 
     def _hazard_speed_mult(self) -> float:
-        return L2_HAZARD_SPEED_MULT if self.current_level >= 2 else 1.0
+        return L2_HAZARD_SPEED_MULT * self.current_level if self.current_level >= 2 else 1.0
 
     def _tile_fade_mult(self) -> float:
-        return L2_TILE_FADE_MULT if self.current_level >= 2 else 1.0
+        return L2_TILE_FADE_MULT * self.current_level if self.current_level >= 2 else 1.0
 
     def _tile_wave_mult(self) -> float:
-        return L2_TILE_WAVE_MULT if self.current_level >= 2 else 1.0
+        return L2_TILE_WAVE_MULT * self.current_level if self.current_level >= 2 else 1.0
 
     def _player_at_right_exit(self) -> bool:
         return self.player.rect.right >= self.playfield.right - EXIT_RIGHT_MARGIN
 
-    def _build_playfield_content(self) -> None:
-        def add_wall(r: pygame.Rect) -> None:
-            wall = Wall(r, self.palette.wall)
+    def _build_playfield_content(self) -> None:        
+        
+        def add_wall_rect(rect: pygame.Rect) -> None:
+            wall = Wall(rect, self.palette.wall)
             self.walls.add(wall)
             self.all_sprites.add(wall)
 
+        # --- Border walls ---
         t = 16
-        add_wall(pygame.Rect(self.playfield.left, self.playfield.top, self.playfield.width, t))
-        add_wall(pygame.Rect(self.playfield.left, self.playfield.bottom - 4, self.playfield.width, 20))
-        add_wall(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
-        add_wall(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
+        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.top, self.playfield.width, t))
+        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.bottom - 4, self.playfield.width, 20))
+        add_wall_rect(pygame.Rect(self.playfield.left, self.playfield.top, t, self.playfield.height))
+        add_wall_rect(pygame.Rect(self.playfield.right - t, self.playfield.top, t, self.playfield.height))
 
-        self.level_data = LEVELS[self.current_level - 1]
-        lx = self.playfield.left
-        lt = self.playfield.top
-        for x, y, w, h in self.level_data["walls"]:
-            add_wall(pygame.Rect(lx + x, lt + y, w, h))
+        # --- TILE LEVEL ---
+        grid = LEVELS[self.current_level - 1]
 
-        hmult = self._hazard_speed_mult()
-        cy = self.playfield.centery
-        for hx, hy, spd in self.level_data["hazards"]:
-            hz = Hazard(
-                (lx + hx, cy + hy),
-                color=self.palette.hazard,
-                spin_speed_dps=spd * hmult,
-            )
-            self.hazards.add(hz)
-            self.all_sprites.add(hz)
+        TILE_SIZE = 20   # the game breaks if this isn't here
 
-        for _ in range(self.level_data["coins"]):
-            for __ in range(120):
-                x = self.rng.randint(self.playfield.left + 50, self.playfield.right - 50)
-                y = self.rng.randint(self.playfield.top + 50, self.playfield.bottom - 50)
-                candidate = Coin((x, y), color=self.palette.coin)
+        for row_idx, row in enumerate(grid):
+            for col_idx, tile in enumerate(row):
 
-                if pygame.sprite.spritecollideany(candidate, self.walls):
-                    continue
-                if pygame.sprite.spritecollideany(candidate, self.coins):
-                    continue
-                if candidate.rect.colliderect(self.player.rect):
-                    continue
+                x = self.playfield.left + col_idx * TILE_SIZE
+                y = self.playfield.top + row_idx * TILE_SIZE
 
-                self.coins.add(candidate)
-                self.all_sprites.add(candidate)
-                break
+                # --- WALL ---
+                if tile == "W":
+                    add_wall_rect(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
 
+                # --- HAZARD ---
+                elif tile == "H":
+                    hz = Hazard(
+                        (x, y),
+                        color=self.palette.hazard,
+                        spin_speed_dps=200 * self._hazard_speed_mult(),
+                    )
+                    self.hazards.add(hz)
+                    self.all_sprites.add(hz)
+
+                # --- COIN ---
+                elif tile == "C":
+                    coin = Coin((x, y), color=self.palette.coin)
+                    self.coins.add(coin)
+                    self.all_sprites.add(coin)
+
+                # --- PLAYER SPAWN ---
+                elif tile == "P":
+                    self.player.pos.update(x, y)
+                    self.player.rect.center = (x, y)
+
+        # --- TileManager ---
         self.tile_manager = TileManager(
             self.playfield,
-            panel_color=self.palette.panel,
-            rng=self.rng,
-            fade_speed_mult=self._tile_fade_mult(),
-            wave_speed_mult=self._tile_wave_mult(),
+            panel_color = self.palette.panel,
+            rng = self.rng,
+            fade_speed_mult = self._tile_fade_mult(),
+            wave_speed_mult = self._tile_wave_mult(),
         )
 
     def _reset_level(self, *, keep_state: bool = False) -> None:
-        self.current_level = 1
         self.all_sprites.empty()
         self.walls.empty()
         self.coins.empty()
@@ -153,25 +157,9 @@ class Game:
             self.state = "play"
 
     def _advance_to_next_level(self) -> None:
-        hp = self.player.hp
-        score = self.player.score
-
-        self.current_level += 1
-        self.all_sprites.empty()
-        self.walls.empty()
-        self.coins.empty()
-        self.hazards.empty()
-        self.particles.clear()
-
-        self.player = Player(
-            (self.playfield.left + 100, self.playfield.centery),
-            color=self.palette.player,
-        )
-        self.player.hp = hp
-        self.player.score = score
-        self.all_sprites.add(self.player)
-
-        self._build_playfield_content()
+        self._pending_hp = self.player.hp
+        self._pending_score = self.player.score
+        self.state = "level_cleared"
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type != pygame.KEYDOWN:
@@ -183,10 +171,6 @@ class Game:
 
         if event.key == pygame.K_F1:
             self.debug = not self.debug
-            return
-
-        if event.key == pygame.K_r:
-            self._reset_level(keep_state=(self.state == "title"))
             return
 
         if event.key == pygame.K_1:
@@ -211,10 +195,32 @@ class Game:
             elif self.state == "paused":
                 self.state = "play"
 
-        if self.state in {"title", "game_over", "won"} and event.key == pygame.K_RETURN:
-            self.current_level = 1
-            self._reset_level(keep_state=True)
+        if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
+            if self.state == "level_cleared":
+                self._level_cleared()
+            else:
+                self._reset_level(keep_state = True)
             self.state = "play"
+
+    def _level_cleared(self) -> None:
+        self.current_level += 1
+        
+        self.all_sprites.empty()
+        self.walls.empty()
+        self.coins.empty()
+        self.hazards.empty()
+        self.particles.clear()
+        
+        self.player = Player(
+            (self.playfield.left + 100, self.playfield.centery),
+            color=self.palette.player
+        )
+        
+        self.player.hp = self._pending_hp
+        self.player.score = self._pending_score
+        self.all_sprites.add(self.player)
+        
+        self._build_playfield_content()
 
     def _read_move(self) -> pygame.Vector2:
         keys = pygame.key.get_pressed()
@@ -380,6 +386,7 @@ class Game:
             if self.current_level >= len(LEVELS):
                 self.state = "won"
             else:
+                self.state = "level_cleared"
                 self._advance_to_next_level()
 
     def _camera_offset(self) -> tuple[int, int]:
@@ -428,7 +435,7 @@ class Game:
         player_image = self.player.image
         if self.cue_flash and self.player.flash_for > 0:
             player_image = player_image.copy()
-            player_image.fill((255, 255, 255, 120), special_flags=pygame.BLEND_RGBA_ADD)
+            player_image.fill((255, 255, 255, 120), special_flags = pygame.BLEND_RGBA_ADD)
         self.screen.blit(player_image, self.player.rect.move(cam))
 
         for p in self.particles:
@@ -450,6 +457,8 @@ class Game:
         if self.state == "title":
             self._draw_centered("Press Enter to Start.", y=self.playfield.centery, color=self.palette.text)
             self._draw_centered("Press P to pause or view controls.", y=self.playfield.centery + 40, color=self.palette.text)
+        elif self.state == "level_cleared":
+            self._draw_centered(f"You cleared level {self.current_level}! — Press Enter", y=self.playfield.centery, color=self.palette.text)
         elif self.state == "game_over":
             self._draw_centered("Game Over — Press Enter", y=self.playfield.centery, color=self.palette.text)
         elif self.state == "won":
