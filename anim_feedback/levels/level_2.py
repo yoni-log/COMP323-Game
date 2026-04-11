@@ -1,4 +1,4 @@
-# Status: Editing in progress
+# Status: Complete
 # 18 coins, 12 hazards
 # Far right boundary of the level is at the hashtag (col 146-147)
 

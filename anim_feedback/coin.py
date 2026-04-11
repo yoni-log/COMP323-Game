@@ -9,7 +9,7 @@ class Coin(pygame.sprite.Sprite):
         color: pygame.Color,
     ) -> None:
         super().__init__()
-        self.anim = Animation(_make_coin_frames(color), fps=10.0)
+        self.anim = Animation(_make_coin_frames(color), fps = 10.0)
         self.image = self.anim.image
         self.rect = self.image.get_rect(center = center)
 

@@ -1,4 +1,5 @@
 # Status: Copy of Level 1, needs editing
+# Far right boundary of the level is at the hashtag (col 146-147)
 
 LEVEL = [
     "...............................W.........................................W..............................W....................................", 

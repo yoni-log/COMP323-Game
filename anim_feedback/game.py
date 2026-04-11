@@ -65,21 +65,25 @@ class Game:
         self._hitstop_for = 0.0
 
         self.level_data = []
-        self.current_level = 1   # Change this value to test any level without having to start from Level 1
+        self.current_level = 5   # Change this value to test any level without having to start from Level 1
 
         self._reset_level(keep_state = True)
 
+    # --- Diffculty parameters ---
+
     def _hazard_speed_mult(self) -> float:
-        return 0.8 + (0.2 * self.current_level) if self.current_level >= 2 else 1.0
+        return 1.0 + (0.2 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _tile_fade_mult(self) -> float:
-        return 0.9 + (0.05 * self.current_level) if self.current_level >= 2 else 1.0
+        return 0.9 + (0.1 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _tile_wave_mult(self) -> float:
-        return 0.8 + (0.05 * self.current_level) if self.current_level >= 2 else 1.0
+        return 0.8 + (0.1 * self.current_level) if self.current_level >= 2 else 1.0
 
     def _player_at_right_exit(self) -> bool:
         return self.player.rect.right >= self.playfield.right - EXIT_RIGHT_MARGIN
+
+    # --- Level building and management ---
 
     def _build_playfield_content(self) -> None:        
         
@@ -118,6 +122,9 @@ class Game:
 
         TILE_SIZE = 20   # the game breaks if this isn't here
 
+        self.coin_totals = {}
+        self.coin_counter = 0
+
         for row_idx, row in enumerate(grid):
             for col_idx, tile in enumerate(row):
 
@@ -140,14 +147,18 @@ class Game:
 
                 # --- COIN ---
                 elif tile == "C":
+                    self.coin_counter += 1
                     coin = Coin((x, y), color = self.palette.coin)
                     self.coins.add(coin)
                     self.all_sprites.add(coin)
+                    self.coin_totals[self.current_level] = self.coin_counter
 
                 # --- PLAYER SPAWN ---
                 elif tile == "P":
                     self.player.pos.update(x, y)
                     self.player.rect.center = (x, y)
+        
+        self.coin_counter = 0
 
         # --- TileManager ---
         self.tile_manager = TileManager(
@@ -177,8 +188,6 @@ class Game:
             self.state = "play"
 
     def _advance_to_next_level(self) -> None:
-        self._pending_hp = PLAYER_HEALTH          # reset HP on level advance
-        self._pending_score = self.player.score   # maintain player score between levels
         self.state = "level_cleared"
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -239,6 +248,12 @@ class Game:
                 self.state = "title"
                 run_start_screen()
             
+            elif self.state == "game_over":
+                self.current_level = 1
+                self._reset_level(keep_state = True)
+                self.state = "title"
+                run_start_screen()
+
             else:
                 self.state = "play"
                 self._reset_level(keep_state = True)
@@ -252,13 +267,12 @@ class Game:
         self.hazards.empty()
         self.particles.clear()
         
-        self.player = Player(
-            (self.playfield.left + 100, self.playfield.centery),
-            color=self.palette.player
-        )
+        self.player = Player((self.playfield.left + 100, self.playfield.centery), 
+                            color = self.palette.player)
         
-        self.player.hp = self._pending_hp
-        self.player.score = self._pending_score
+        self.player.hp = PLAYER_HEALTH   # reset HP on level advance (might change in favor of health pick-up items)
+        self.player.score = 0            # reset score on level advance, as score is now a coin counter for each level individually
+
         self.all_sprites.add(self.player)
         
         self._build_playfield_content()
@@ -315,12 +329,12 @@ class Game:
             speed = self.rng.uniform(80.0, 240.0)
             vel = pygame.Vector2(speed, 0).rotate_rad(angle)
             p = Particle(
-                pos=pygame.Vector2(center),
-                vel=vel,
-                radius=self.rng.uniform(2.0, 5.0),
-                color=color,
-                life=0.35,
-                ttl=0.35,
+                pos = pygame.Vector2(center),
+                vel = vel,
+                radius = self.rng.uniform(2.0, 5.0),
+                color = color,
+                life = 0.35,
+                ttl = 0.35,
             )
             self.particles.append(p)
 
@@ -448,13 +462,17 @@ class Game:
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
         self._draw_text(
-            f"Level: {self.current_level}   Score: {self.player.score}   HP: {self.player.hp}",
+            f"Level: {self.current_level}  Coins: {self.player.score} / {self.coin_totals.get(self.current_level)}  HP: {self.player.hp}",
             (12, 16),
             self.palette.text
         )
+
+        level_10_hud_string = f"Collect all the coins and reach the purple wall on the right edge to win the game!"
+        main_hud_string = f"Collect all the coins and reach the purple wall on the right edge to escape Level {self.current_level}!"
+
         self._draw_text(
-            "Collect all the coins and reach the purple wall on the right edge to escape the level!",
-            (295, 16),
+            (level_10_hud_string if self.current_level == 10 else main_hud_string),
+            ((320, 16) if self.current_level == 10 else (310, 16)),
             self.palette.text
         )
 
@@ -509,12 +527,15 @@ class Game:
                                 color = self.palette.text)
         
         elif self.state == "level_cleared":
-            self._draw_centered(f"You cleared Level {self.current_level}! — Press Enter to Continue", 
+            self._draw_centered(f"You cleared Level {self.current_level}!", 
                                 y = self.playfield.centery, 
+                                color = self.palette.text)
+            self._draw_centered(f"Press Enter to Continue to Level {self.current_level + 1}.", 
+                                y = self.playfield.centery + 40, 
                                 color = self.palette.text)
         
         elif self.state == "game_over":
-            self._draw_centered("Game Over — Press Enter", 
+            self._draw_centered("Game Over — Press Enter to return to title screen.", 
                                 y = self.playfield.centery, 
                                 color = self.palette.text)
         
@@ -539,6 +560,7 @@ class Game:
                                 y = self.playfield.centery + 40, 
                                 color = self.palette.text)
 
+    # Used for displaying HUD text
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
         shadow = self.font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.font.render(text, True, color)
@@ -546,6 +568,7 @@ class Game:
         self.screen.blit(shadow, (x + 1, y + 1))
         self.screen.blit(s, (x, y))
 
+    # Used for displaying large centered text on the screen for various game states
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
         shadow = self.big_font.render(text, True, pygame.Color(0, 0, 0, 180))
         s = self.big_font.render(text, True, color)
