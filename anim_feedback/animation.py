@@ -1,5 +1,4 @@
 import pygame
-from dataclasses import dataclass, field
 
 class Animation:
     def __init__(self, frames: list[pygame.Surface], *, fps: float) -> None:

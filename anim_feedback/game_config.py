@@ -11,6 +11,7 @@ PLAYER_SPEED = 320
 INVINCIBLE_FOR = 0.85
 COLLECT_DURATION = 0.5
 FLASH_DURATION = 0.18     # controls player hit animation
+DASH_DURATION = 1.5
 
 # Tile spawning
 TILE_SIZE = 64

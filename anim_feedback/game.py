@@ -5,6 +5,7 @@ import random
 
 from .audio import Tone
 from .coin import Coin
+from .dash_power_up import Dash_Power_Up
 from .game_config import *
 from .hazard import Hazard
 from .levels import LEVELS
@@ -49,13 +50,17 @@ class Game:
         self.walls: pygame.sprite.Group[Wall] = pygame.sprite.Group()
         self.coins: pygame.sprite.Group[Coin] = pygame.sprite.Group()
         self.hazards: pygame.sprite.Group[Hazard] = pygame.sprite.Group()
+        self.dash_power_ups: pygame.sprite.Group[Dash_Power_Up] = pygame.sprite.Group()
 
         self.coin_pickup_tone: Tone = Tone(880, 0.05, 0.20)
+        self.dash_power_up_pickup_tone: Tone = Tone(880, 0.05, 0.20)
         self.player_hit_tone: Tone = Tone(160, 0.16, 0.25)
         self.game_over_tone: Tone = Tone(1000, 0.20, 0.20)
 
         self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
+
+        self.dash_for = 0.0
 
         self.particles: list[Particle] = []
 
@@ -151,6 +156,12 @@ class Game:
                     self.all_sprites.add(coin)
                     self.coin_totals[self.current_level] = self.coin_counter
 
+                # --- DASH POWER-UP ---
+                elif tile == "D":
+                    dash_power_up = Dash_Power_Up((x, y), color = self.palette.dash_power_up)
+                    self.dash_power_ups.add(dash_power_up)
+                    self.all_sprites.add(dash_power_up)
+                
                 # --- PLAYER SPAWN ---
                 elif tile == "P":
                     self.player.pos.update(x, y)
@@ -171,6 +182,7 @@ class Game:
         self.all_sprites.empty()
         self.walls.empty()
         self.coins.empty()
+        self.dash_power_ups.empty()
         self.hazards.empty()
         self.particles.clear()
 
@@ -262,6 +274,7 @@ class Game:
         self.all_sprites.empty()
         self.walls.empty()
         self.coins.empty()
+        self.dash_power_ups.empty()
         self.hazards.empty()
         self.particles.clear()
         
@@ -341,7 +354,20 @@ class Game:
             self._shake_for = max(self._shake_for, 0.10)
 
         if self.cue_particles:
-            self._spawn_particles(coin_rect.center, color=self.palette.particle, count=18)
+            self._spawn_particles(coin_rect.center, color = self.palette.particle, count = 18)
+
+        if pygame.mixer.get_busy() == False:
+            self.coin_pickup_tone.play()
+
+    def _cue_dash_power_up(self, dash_power_up_rect: pygame.Rect, dt: float) -> None:
+        self.dash_for = DASH_DURATION
+        self.player.speed *= 1.5
+
+        if self.cue_shake:
+            self._shake_for = max(self._shake_for, 0.10)
+
+        if self.cue_particles:
+            self._spawn_particles(dash_power_up_rect.center, color = self.palette.particle, count = 18)
 
         if pygame.mixer.get_busy() == False:
             self.coin_pickup_tone.play()
@@ -413,6 +439,11 @@ class Game:
         else:
             self.player.set_state("run")
 
+        if self.dash_for > 0:
+            self.dash_for = max(0.0, self.dash_for - dt)
+        else:
+            self.player.speed = PLAYER_SPEED
+
         self._move_player_axis("x", self.player.vel.x * dt)
         self._move_player_axis("y", self.player.vel.y * dt)
 
@@ -421,6 +452,9 @@ class Game:
             self.player.score += len(picked)
             self.player.trigger_collect()
             self._cue_coin(picked[0].rect)
+
+        for picked in pygame.sprite.spritecollide(self.player, self.dash_power_ups, dokill = True):
+            self._cue_dash_power_up(picked.rect, dt)
 
         for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill = False):
             self._apply_damage(hz.rect)
@@ -485,6 +519,9 @@ class Game:
 
         for coin in self.coins:
             self.screen.blit(coin.image, coin.rect.move(cam))
+
+        for dash_power_up in self.dash_power_ups:
+            self.screen.blit(dash_power_up.image, dash_power_up.rect.move(cam))
 
         for hz in self.hazards:
             self.screen.blit(hz.image, hz.rect.move(cam))
