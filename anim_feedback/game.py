@@ -15,10 +15,8 @@ from .player import Player
 from .start_screen import *
 from .tile_manager import TileManager
 
-
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
-
 
 class Game:
     def __init__(self) -> None:
@@ -37,7 +35,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | level_cleared | game_over | won | paused
+        self.state = "title"  # title | play | level_cleared | paused | return_to_title_screen | won | game_over
 
         self.cue_flash = True
         self.cue_shake = True
@@ -56,7 +54,7 @@ class Game:
         self.player_hit_tone: Tone = Tone(160, 0.16, 0.25)
         self.game_over_tone: Tone = Tone(1000, 0.20, 0.20)
 
-        self.player = Player(self.playfield.center, color=self.palette.player)
+        self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
 
         self.particles: list[Particle] = []
@@ -65,7 +63,7 @@ class Game:
         self._hitstop_for = 0.0
 
         self.level_data = []
-        self.current_level = 1   # Change this value to test any level without having to start from Level 1
+        self.current_level = 8   # Change this value to test any level without having to start from Level 1
 
         self._reset_level(keep_state = True)
 
@@ -467,8 +465,8 @@ class Game:
             self.palette.text
         )
 
-        level_10_hud_string = f"Collect all the coins and reach the purple wall on the right edge to win the game!"
-        main_hud_string = f"Collect all the coins and reach the purple wall on the right edge to escape Level {self.current_level}!"
+        level_10_hud_string = f"Collect all the coins and reach the white wall on the right edge to win the game!"
+        main_hud_string = f"Collect all the coins and reach the white wall on the right edge to escape Level {self.current_level}!"
 
         self._draw_text(
             (level_10_hud_string if self.current_level == 10 else main_hud_string),
