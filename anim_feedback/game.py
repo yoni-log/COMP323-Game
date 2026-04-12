@@ -65,7 +65,7 @@ class Game:
         self._hitstop_for = 0.0
 
         self.level_data = []
-        self.current_level = 5   # Change this value to test any level without having to start from Level 1
+        self.current_level = 1   # Change this value to test any level without having to start from Level 1
 
         self._reset_level(keep_state = True)
 

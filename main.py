@@ -1,7 +1,6 @@
 import pygame
 
 from anim_feedback.game import Game
-from anim_feedback.game_config import *
 from anim_feedback.start_screen import *
 
 def main() -> None:
