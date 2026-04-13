@@ -3,9 +3,8 @@ from __future__ import annotations
 import pygame
 import random
 
-from .audio import Tone
-from .coin import Coin
-from .dash_power_up import Dash_Power_Up
+from .audio import *
+from .items import Coin, Dash_Power_Up
 from .game_config import *
 from .hazard import Hazard
 from .levels import LEVELS
@@ -61,6 +60,7 @@ class Game:
         self.all_sprites.add(self.player)
 
         self.dash_for = 0.0
+        self.dashes = 0
 
         self.particles: list[Particle] = []
 
@@ -68,7 +68,7 @@ class Game:
         self._hitstop_for = 0.0
 
         self.level_data = []
-        self.current_level = 8   # Change this value to test any level without having to start from Level 1
+        self.current_level = 1   # Change this value to test any level without having to start from Level 1
 
         self._reset_level(keep_state = True)
 
@@ -197,47 +197,47 @@ class Game:
         if not keep_state:
             self.state = "play"
 
-    def _advance_to_next_level(self) -> None:
-        self.state = "level_cleared"
-
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type != pygame.KEYDOWN:
             return
 
+        # Quit the game using the escape key from any state
         if event.key == pygame.K_ESCAPE:
             pygame.event.post(pygame.event.Event(pygame.QUIT))
             return
 
+        # Handle debug toggles with the F1 key and 1-4 keys
         if event.key == pygame.K_F1:
             self.debug = not self.debug
             return
 
-        if event.key == pygame.K_1:
-            self.cue_flash = not self.cue_flash
-            return
+        if self.debug:
+            if event.key == pygame.K_1:
+                self.cue_flash = not self.cue_flash
+                return
+            if event.key == pygame.K_2:
+                self.cue_shake = not self.cue_shake
+                return
+            if event.key == pygame.K_3:
+                self.cue_hitstop = not self.cue_hitstop
+                return
+            if event.key == pygame.K_4:
+                self.cue_particles = not self.cue_particles
+                return
 
-        if event.key == pygame.K_2:
-            self.cue_shake = not self.cue_shake
-            return
-
-        if event.key == pygame.K_3:
-            self.cue_hitstop = not self.cue_hitstop
-            return
-
-        if event.key == pygame.K_4:
-            self.cue_particles = not self.cue_particles
-            return
-
+        # Handle switching between "play" and "paused" states with the P key
         if event.key == pygame.K_p:
             if self.state == "play":
                 self.state = "paused"
             elif self.state == "paused":
                 self.state = "play"
 
-        if self.state == "paused" and event.key == pygame.K_t:   # option to return to the title screen
+        # Handle "paused" state input for returning to the title screen
+        if self.state == "paused" and event.key == pygame.K_t: 
             self.state = "return_to_title_screen"
 
-        if self.state == "return_to_title_screen":
+        # Handle "return_to_title_screen" state input
+        if self.state == "return_to_title_screen": 
             if event.key == pygame.K_y:
                 self.current_level = 1
                 self._reset_level(keep_state = True)
@@ -246,6 +246,7 @@ class Game:
             elif event.key == pygame.K_n:
                 self.state = "paused"
         
+        # State transitions that require pressing the Enter key
         if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
             
             if self.state == "level_cleared":
@@ -268,6 +269,13 @@ class Game:
                 self.state = "play"
                 self._reset_level(keep_state = True)
 
+        if self.dashes > 0 and self.state == "play" and (event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT):
+            self._dash_power_up_use(self.player.rect, dt = 0.0)
+
+    def _advance_to_next_level(self) -> None:
+        self.pending_dashes = self.dashes
+        self.state = "level_cleared"
+
     def _level_cleared(self) -> None:
         self.current_level += 1
         
@@ -281,8 +289,9 @@ class Game:
         self.player = Player((self.playfield.left + 100, self.playfield.centery), 
                             color = self.palette.player)
         
-        self.player.hp = PLAYER_HEALTH   # reset HP on level advance (might change in favor of health pick-up items)
-        self.player.score = 0            # reset score on level advance, as score is now a coin counter for each level individually
+        self.player.hp = PLAYER_HEALTH      # reset HP on level advance (might change in favor of health pick-up items)
+        self.player.score = 0               # reset score on level advance, as score is now a coin counter for each level individually
+        self.dashes = self.pending_dashes   # dashes carry between levels
 
         self.all_sprites.add(self.player)
         
@@ -349,28 +358,24 @@ class Game:
             )
             self.particles.append(p)
 
-    def _cue_coin(self, coin_rect: pygame.Rect) -> None:
+    # Cues animations and sounds for coin and dash power-up pickups
+    def _cue_item(self, item_rect: pygame.Rect, pickup_tone: Tone) -> None:
         if self.cue_shake:
             self._shake_for = max(self._shake_for, 0.10)
 
         if self.cue_particles:
-            self._spawn_particles(coin_rect.center, color = self.palette.particle, count = 18)
+            self._spawn_particles(item_rect.center, color = self.palette.particle, count = 18)
 
         if pygame.mixer.get_busy() == False:
-            self.coin_pickup_tone.play()
+            pickup_tone.play()
 
-    def _cue_dash_power_up(self, dash_power_up_rect: pygame.Rect, dt: float) -> None:
+    # Handles actual use of the dash power-up item, as well as animations and sounds
+    def _dash_power_up_use(self, dash_power_up_rect: pygame.Rect, dt: float) -> None:
+        self.dashes -= 1
         self.dash_for = DASH_DURATION
         self.player.speed *= 1.5
 
-        if self.cue_shake:
-            self._shake_for = max(self._shake_for, 0.10)
-
-        if self.cue_particles:
-            self._spawn_particles(dash_power_up_rect.center, color = self.palette.particle, count = 18)
-
-        if pygame.mixer.get_busy() == False:
-            self.coin_pickup_tone.play()
+        self._cue_item(dash_power_up_rect, self.dash_power_up_pickup_tone)
 
     def _cue_hit(self, source_rect: pygame.Rect) -> None:
         if self.cue_flash:
@@ -439,11 +444,6 @@ class Game:
         else:
             self.player.set_state("run")
 
-        if self.dash_for > 0:
-            self.dash_for = max(0.0, self.dash_for - dt)
-        else:
-            self.player.speed = PLAYER_SPEED
-
         self._move_player_axis("x", self.player.vel.x * dt)
         self._move_player_axis("y", self.player.vel.y * dt)
 
@@ -451,10 +451,12 @@ class Game:
         if picked:
             self.player.score += len(picked)
             self.player.trigger_collect()
-            self._cue_coin(picked[0].rect)
+            self._cue_item(picked[0].rect, self.coin_pickup_tone)
 
         for picked in pygame.sprite.spritecollide(self.player, self.dash_power_ups, dokill = True):
-            self._cue_dash_power_up(picked.rect, dt)
+            self.dashes += 1
+            self.player.trigger_collect()
+            self._cue_item(picked.rect, self.dash_power_up_pickup_tone)
 
         for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill = False):
             self._apply_damage(hz.rect)
@@ -464,17 +466,24 @@ class Game:
                 self._apply_damage(tile.rect)
                 break
 
-        self.tile_manager.update(dt)
         self.coins.update(dt)
+        self.dash_power_ups.update(dt)
         self.hazards.update(dt)
         self.player.update(dt)
+        self.tile_manager.update(dt)
 
+        # Check for level completion
         if len(self.coins) == 0 and self._player_at_right_exit():
             if self.current_level >= len(LEVELS):
                 self.state = "won"
             else:
-                self.state = "level_cleared"
                 self._advance_to_next_level()
+        
+        # Handle dash duration and speed reset
+        if self.dash_for > 0:
+            self.dash_for = max(0.0, self.dash_for - dt)
+        else:
+            self.player.speed = PLAYER_SPEED
 
     def _camera_offset(self) -> tuple[int, int]:
         target = self.player.pos.x - SCREEN_W // 2
@@ -493,18 +502,26 @@ class Game:
         hud_rect = pygame.Rect(0, 0, SCREEN_W, HUD_H)
         pygame.draw.rect(self.screen, self.palette.panel, hud_rect)
 
+        # Defining HUD Element Strings
+        level_string = f"Level: {self.current_level}  "
+        coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level)}  "
+        dashes_string = f"Dashes: {self.dashes}  "
+        hp_string = f"HP: {self.player.hp}  "
+
+        # Drawing HUD Element Strings
         self._draw_text(
-            f"Level: {self.current_level}  Coins: {self.player.score} / {self.coin_totals.get(self.current_level)}  HP: {self.player.hp}",
+            (level_string + coins_string + dashes_string + hp_string), 
             (12, 16),
             self.palette.text
         )
 
-        level_10_hud_string = f"Collect all the coins and reach the white wall on the right edge to win the game!"
-        main_hud_string = f"Collect all the coins and reach the white wall on the right edge to escape Level {self.current_level}!"
+        # Message on the right of the HUD is different for Level 10
+        level_10_hud_string = f"Collect all coins and reach the white wall on the right edge to win the game!"
+        main_hud_string = f"Collect all coins and reach the white wall on the right edge to escape Level {self.current_level}!"
 
         self._draw_text(
             (level_10_hud_string if self.current_level == 10 else main_hud_string),
-            ((320, 16) if self.current_level == 10 else (310, 16)),
+            ((352, 16) if self.current_level == 10 else (342, 16)),
             self.palette.text
         )
 
@@ -581,10 +598,16 @@ class Game:
         
         elif self.state == "paused":
             self._draw_centered("Paused — Press P to resume or T to return to title screen.", 
-                                y = self.playfield.centery, 
+                                y = self.playfield.centery - 60, 
                                 color = self.palette.text)
-            self._draw_centered("While playing, use arrow keys or WASD to move.", 
-                                y = self.playfield.centery + 40, 
+            self._draw_centered("Controls:", 
+                                y = self.playfield.centery - 20, 
+                                color = self.palette.text)
+            self._draw_centered("Move: Arrow keys or WASD", 
+                                y = self.playfield.centery + 20, 
+                                color = self.palette.text)
+            self._draw_centered("Dash: Left or Right Shift", 
+                                y = self.playfield.centery + 60, 
                                 color = self.palette.text)
         
         elif self.state == "return_to_title_screen":

@@ -128,15 +128,15 @@ def draw_title(surface, tick):
 def draw_prompt(surface, tick):
    if (tick // 35) % 2 == 0:
         prompt = font_prompt.render("PRESS  ENTER  TO  START", True, PROMPT_COLOR)
-        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 310))
+        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 300))
 
 # --- Controls panel ---
-CONTROLS = [("MOVE",  "WASD or Arrow Keys"), ("PAUSE", "P"), ("RETURN TO TITLE", "T"), ("QUIT", "ESC")]
+CONTROLS = [("MOVE",  "WASD or Arrow Keys"), ("DASH", "SHIFT"), ("PAUSE", "P"), ("RETURN TO TITLE", "T"), ("QUIT", "ESC")]
 
 def draw_controls(surface):
-    panel_w, panel_h = 360, 140
-    panel_x = WIDTH // 2 - panel_w // 2
-    panel_y = 380
+    panel_w, panel_h = 360, 165           # control panel dimensions
+    panel_x = WIDTH // 2 - panel_w // 2   # control panel x position (centered)
+    panel_y = 360                         # control panel y position (below title and prompt)
     panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
     pygame.draw.rect(panel_surf, (0, 0, 0, 120), (0, 0, panel_w, panel_h), border_radius = 8)
     pygame.draw.rect(panel_surf, (180, 120, 40, 160), (0, 0, panel_w, panel_h), 2, border_radius = 8)

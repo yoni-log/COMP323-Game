@@ -14,6 +14,6 @@ class Palette:
     coin: pygame.Color = field(default_factory = lambda: pygame.Color("#cd7f32"))
     dash_power_up: pygame.Color = field(default_factory = lambda: pygame.Color("#5faad0"))
     hazard: pygame.Color = field(default_factory = lambda: pygame.Color("#c83c14"))
-    particle: pygame.Color = field(default_factory = lambda: pygame.Color("#ffdc64"))
+    particle: pygame.Color = field(default_factory = lambda: pygame.Color("#5faad0"))
     wall: pygame.Color = field(default_factory = lambda: pygame.Color("#654321"))
     finish_wall: pygame.Color = field(default_factory = lambda: pygame.Color("#ffffff"))
