@@ -59,9 +59,6 @@ class Game:
         self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
 
-        self.dash_for = 0.0
-        self.dashes = 0
-
         self.particles: list[Particle] = []
 
         self._shake_for = 0.0
@@ -69,6 +66,9 @@ class Game:
 
         self.level_data = []
         self.current_level = 1   # Change this value to test any level without having to start from Level 1
+
+        self.dashes = 0
+        self.dash_for = 0.0
 
         self._reset_level(keep_state = True)
 
@@ -240,6 +240,7 @@ class Game:
         if self.state == "return_to_title_screen": 
             if event.key == pygame.K_y:
                 self.current_level = 1
+                self.dashes = 0
                 self._reset_level(keep_state = True)
                 self.state = "title"
                 run_start_screen()
@@ -255,12 +256,14 @@ class Game:
             
             elif self.state == "won":
                 self.current_level = 1
+                self.dashes = 0
                 self._reset_level(keep_state = True)
                 self.state = "title"
                 run_start_screen()
             
             elif self.state == "game_over":
                 self.current_level = 1
+                self.dashes = 0
                 self._reset_level(keep_state = True)
                 self.state = "title"
                 run_start_screen()
