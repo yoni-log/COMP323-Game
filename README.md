@@ -7,7 +7,7 @@ How to Run
 
 pip install -r requirements.txt
 2.  Run the game:
-python main.py
+python main.py 
 
 Controls
 Move: Move:  Arrow Keys or A / D
