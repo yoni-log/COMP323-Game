@@ -1,3 +1,4 @@
+import math
 import pygame
 
 class Animation:
@@ -67,9 +68,40 @@ def _make_dash_power_up_frames(color: pygame.Color) -> list[pygame.Surface]:
         pygame.draw.polygon(surf, color, points)
         pygame.draw.polygon(surf, pygame.Color("#000000"), points, 2)
 
-        # sparkle = pygame.Color("#ffffff")
-        # sparkle.a = 180
-        # pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
+        sparkle = pygame.Color("#ffffff")
+        sparkle.a = 180
+        pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
+
+        frames.append(surf)
+
+    return frames
+
+def _make_heart_frames(color:pygame.Color) -> list[pygame.Surface]:
+    frames: list[pygame.Surface] = []
+
+    for i in range(6):
+        pulse = 1.0 + 0.08 * (1.0 if i % 2 == 0 else -1.0)
+        w = int(round(26 * pulse))
+        h = int(round(26 * pulse))
+
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx, cy = w // 2, h // 2
+        r = min(cx, cy) - 2
+
+        points = []
+        for i in range(0, 361):
+            angle = math.radians(i)
+
+            x = 16 * math.sin(angle) ** 3
+            y = 13 * math.cos(angle) - 5 * math.cos(2 * angle) - 2 * math.cos(3 * angle) - math.cos(4 * angle)
+            
+            points.append((cx + int(x * r / 16), cy - int(y * r / 13)))
+
+        pygame.draw.polygon(surf, color, points)
+
+        sparkle = pygame.Color("#ffffff")
+        sparkle.a = 180
+        pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
 
         frames.append(surf)
 

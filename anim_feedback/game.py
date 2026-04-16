@@ -4,7 +4,7 @@ import pygame
 import random
 
 from .audio import *
-from .items import Coin, Dash_Power_Up
+from .items import Coin, Dash_Power_Up, Heart
 from .game_config import *
 from .hazard import Hazard
 from .levels import LEVELS
@@ -50,9 +50,10 @@ class Game:
         self.coins: pygame.sprite.Group[Coin] = pygame.sprite.Group()
         self.hazards: pygame.sprite.Group[Hazard] = pygame.sprite.Group()
         self.dash_power_ups: pygame.sprite.Group[Dash_Power_Up] = pygame.sprite.Group()
-
+        self.hearts: pygame.sprite.Group[Heart] = pygame.sprite.Group()
         self.coin_pickup_tone: Tone = Tone(880, 0.05, 0.20)
         self.dash_power_up_pickup_tone: Tone = Tone(880, 0.05, 0.20)
+        self.heart_pickup_tone: Tone = Tone(880, 0.05, 0.20)
         self.player_hit_tone: Tone = Tone(160, 0.16, 0.25)
         self.game_over_tone: Tone = Tone(1000, 0.20, 0.20)
 
@@ -162,6 +163,12 @@ class Game:
                     self.dash_power_ups.add(dash_power_up)
                     self.all_sprites.add(dash_power_up)
                 
+                # --- HEART ---
+                elif tile == "E":
+                    heart = Heart((x, y), color = self.palette.heart)
+                    self.hearts.add(heart)
+                    self.all_sprites.add(heart)
+
                 # --- PLAYER SPAWN ---
                 elif tile == "P":
                     self.player.pos.update(x, y)
@@ -184,6 +191,7 @@ class Game:
         self.coins.empty()
         self.dash_power_ups.empty()
         self.hazards.empty()
+        self.hearts.empty()
         self.particles.clear()
 
         self.player = Player(
@@ -276,6 +284,7 @@ class Game:
             self._dash_power_up_use(self.player.rect, dt = 0.0)
 
     def _advance_to_next_level(self) -> None:
+        self.pending_hp = self.player.hp
         self.pending_dashes = self.dashes
         self.state = "level_cleared"
 
@@ -292,12 +301,11 @@ class Game:
         self.player = Player((self.playfield.left + 100, self.playfield.centery), 
                             color = self.palette.player)
         
-        self.player.hp = PLAYER_HEALTH      # reset HP on level advance (might change in favor of health pick-up items)
+        self.player.hp = self.pending_hp    # current health carries between levels due to health pick-ups
         self.player.score = 0               # reset score on level advance, as score is now a coin counter for each level individually
         self.dashes = self.pending_dashes   # dashes carry between levels
 
         self.all_sprites.add(self.player)
-        
         self._build_playfield_content()
 
     def _read_move(self) -> pygame.Vector2:
@@ -461,6 +469,11 @@ class Game:
             self.player.trigger_collect()
             self._cue_item(picked.rect, self.dash_power_up_pickup_tone)
 
+        for picked in pygame.sprite.spritecollide(self.player, self.hearts, dokill = True):
+            self.player.hp += 1
+            self.player.trigger_collect()
+            self._cue_item(picked.rect, self.heart_pickup_tone)
+
         for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill = False):
             self._apply_damage(hz.rect)
 
@@ -471,6 +484,7 @@ class Game:
 
         self.coins.update(dt)
         self.dash_power_ups.update(dt)
+        self.hearts.update(dt)
         self.hazards.update(dt)
         self.player.update(dt)
         self.tile_manager.update(dt)
@@ -518,6 +532,12 @@ class Game:
             self.palette.text
         )
 
+        self._draw_text(
+            ("Dashing!" if self.dash_for > 0 else ""), 
+            (12, 32), 
+            self.palette.text
+        )
+
         # Message on the right of the HUD is different for Level 10
         level_10_hud_string = f"Collect all coins and reach the white wall on the right edge to win the game!"
         main_hud_string = f"Collect all coins and reach the white wall on the right edge to escape Level {self.current_level}!"
@@ -545,6 +565,9 @@ class Game:
 
         for hz in self.hazards:
             self.screen.blit(hz.image, hz.rect.move(cam))
+
+        for heart in self.hearts:
+            self.screen.blit(heart.image, heart.rect.move(cam))
 
         player_image = self.player.image
         if self.cue_flash and self.player.flash_for > 0:

@@ -10,12 +10,15 @@ class Wall(pygame.sprite.Sprite):
 
 TILE_SIZE = 20
 
+# dictionary for the characters in the level design files
 TILES = {
-    ".": "empty",
-    "W": "wall",
-    "H": "hazard",
-    "C": "coin",
-    "P": "player_spawn"
+    ".": "empty", 
+    "C": "coin", 
+    "D": "dash", 
+    "H": "hazard", 
+    "E": "heart", 
+    "P": "player_spawn", 
+    "W": "wall"
 }
 
 # Original level system, not using anymore
