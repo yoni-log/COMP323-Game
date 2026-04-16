@@ -594,59 +594,85 @@ class Game:
         # --- Overlay text for various states ---
 
         if self.state == "title":
-            self._draw_centered("Press Enter to Start.", 
-                                y = self.playfield.centery - 40, 
-                                color = self.palette.text)
-            self._draw_centered("While playing, press P to pause,", 
-                                y = self.playfield.centery, 
-                                color = self.palette.text)
-            self._draw_centered("view controls, or return to title screen.", 
-                                y = self.playfield.centery + 40, 
-                                color = self.palette.text)
-        
+            self._draw_centered(
+                "Press Enter to Start.",
+                y = self.playfield.centery - 40,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "While playing, press P to pause,",
+                y = self.playfield.centery,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "view controls, or return to title screen.",
+                y = self.playfield.centery + 40,
+                color = self.palette.menu_muted,
+            )
+
         elif self.state == "level_cleared":
-            self._draw_centered(f"You cleared Level {self.current_level}!", 
-                                y = self.playfield.centery, 
-                                color = self.palette.text)
-            self._draw_centered(f"Press Enter to Continue to Level {self.current_level + 1}.", 
-                                y = self.playfield.centery + 40, 
-                                color = self.palette.text)
-        
+            self._draw_centered(
+                f"You cleared Level {self.current_level}!",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                f"Press Enter to Continue to Level {self.current_level + 1}.",
+                y = self.playfield.centery + 40,
+                color = self.palette.menu_muted,
+            )
+
         elif self.state == "game_over":
-            self._draw_centered("Game Over — Press Enter to return to title screen.", 
-                                y = self.playfield.centery, 
-                                color = self.palette.text)
-        
+            self._draw_centered(
+                "Game Over — Press Enter to return to title screen.",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+
         elif self.state == "won":
-            self._draw_centered("You Escaped! — Press Enter to return to title screen.", 
-                                y = self.playfield.centery, 
-                                color = self.palette.text)
-        
+            self._draw_centered(
+                "You Escaped! — Press Enter to return to title screen.",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+
         elif self.state == "paused":
-            self._draw_centered("Paused — Press P to resume or T to return to title screen.", 
-                                y = self.playfield.centery - 60, 
-                                color = self.palette.text)
-            self._draw_centered("Controls:", 
-                                y = self.playfield.centery - 20, 
-                                color = self.palette.text)
-            self._draw_centered("Move: Arrow keys or WASD", 
-                                y = self.playfield.centery + 20, 
-                                color = self.palette.text)
-            self._draw_centered("Dash: Left or Right Shift", 
-                                y = self.playfield.centery + 60, 
-                                color = self.palette.text)
-        
+            self._draw_centered(
+                "Paused — Press P to resume or T to return to title screen.",
+                y = self.playfield.centery - 60,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "Controls:",
+                y = self.playfield.centery - 20,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Move: Arrow keys or WASD",
+                y = self.playfield.centery + 20,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Dash: Left or Right Shift",
+                y = self.playfield.centery + 60,
+                color = self.palette.menu_muted,
+            )
+
         elif self.state == "return_to_title_screen":
-            self._draw_centered("Are you sure? All current progress will be lost:", 
-                                y = self.playfield.centery, 
-                                color = self.palette.text)
-            self._draw_centered("Y - Yes, N - No", 
-                                y = self.playfield.centery + 40, 
-                                color = self.palette.text)
+            self._draw_centered(
+                "Are you sure? All current progress will be lost:",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "Y - Yes, N - No",
+                y = self.playfield.centery + 40,
+                color = self.palette.menu_muted,
+            )
 
     # Used for displaying HUD text
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
-        shadow = self.font.render(text, True, pygame.Color(0, 0, 0, 180))
+        shadow = self.font.render(text, True, self.palette.menu_shadow)
         s = self.font.render(text, True, color)
         x, y = pos
         self.screen.blit(shadow, (x + 1, y + 1))
@@ -654,11 +680,12 @@ class Game:
 
     # Used for displaying large centered text on the screen for various game states
     def _draw_centered(self, text: str, *, y: int, color: pygame.Color) -> None:
-        shadow = self.big_font.render(text, True, pygame.Color(0, 0, 0, 180))
+        shadow = self.big_font.render(text, True, self.palette.menu_shadow)
         s = self.big_font.render(text, True, color)
         r_shadow = shadow.get_rect(center = (SCREEN_W // 2, y + 1))
         r = s.get_rect(center = (SCREEN_W // 2, y))
-        bg_rect = r.inflate(20, 10)
-        pygame.draw.rect(self.screen, pygame.Color(0, 0, 0), bg_rect)
+        bg_rect = r.inflate(24, 14)
+        pygame.draw.rect(self.screen, self.palette.menu_panel, bg_rect, border_radius = 6)
+        pygame.draw.rect(self.screen, self.palette.menu_panel_border, bg_rect, 1, border_radius = 6)
         self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)
