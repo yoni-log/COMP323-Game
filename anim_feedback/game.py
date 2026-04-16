@@ -12,7 +12,7 @@ from .level_utils import *
 from .palette import Palette
 from .particle import Particle
 from .player import Player
-from .start_screen import *
+from .pregame import run_pregame_sequence
 from .tile_manager import TileManager
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -43,7 +43,8 @@ class Game:
         self.cue_particles = True
 
         self.rng = random.Random(5)
-        pygame.mixer.init()
+        # Mixer often fails on macOS (CoreAudio) after window/display changes; game must still run.
+        init_mixer_safe()
 
         self.all_sprites: pygame.sprite.Group[pygame.sprite.Sprite] = pygame.sprite.Group()
         self.walls: pygame.sprite.Group[Wall] = pygame.sprite.Group()
@@ -51,11 +52,11 @@ class Game:
         self.hazards: pygame.sprite.Group[Hazard] = pygame.sprite.Group()
         self.dash_power_ups: pygame.sprite.Group[Dash_Power_Up] = pygame.sprite.Group()
         self.hearts: pygame.sprite.Group[Heart] = pygame.sprite.Group()
-        self.coin_pickup_tone: Tone = Tone(880, 0.05, 0.20)
-        self.dash_power_up_pickup_tone: Tone = Tone(880, 0.05, 0.20)
-        self.heart_pickup_tone: Tone = Tone(880, 0.05, 0.20)
-        self.player_hit_tone: Tone = Tone(160, 0.16, 0.25)
-        self.game_over_tone: Tone = Tone(1000, 0.20, 0.20)
+        self.coin_pickup_tone = make_tone(880, 0.05, 0.20)
+        self.dash_power_up_pickup_tone = make_tone(880, 0.05, 0.20)
+        self.heart_pickup_tone = make_tone(880, 0.05, 0.20)
+        self.player_hit_tone = make_tone(160, 0.16, 0.25)
+        self.game_over_tone = make_tone(1000, 0.20, 0.20)
 
         self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
@@ -175,6 +176,8 @@ class Game:
                     self.player.rect.center = (x, y)
         
         self.coin_counter = 0
+        if self.current_level not in self.coin_totals:
+            self.coin_totals[self.current_level] = 0
 
         # --- TileManager ---
         self.tile_manager = TileManager(
@@ -249,9 +252,9 @@ class Game:
             if event.key == pygame.K_y:
                 self.current_level = 1
                 self.dashes = 0
-                self._reset_level(keep_state = True)
                 self.state = "title"
-                run_start_screen()
+                run_pregame_sequence()
+                self._reset_level(keep_state = True)
             elif event.key == pygame.K_n:
                 self.state = "paused"
         
@@ -265,16 +268,16 @@ class Game:
             elif self.state == "won":
                 self.current_level = 1
                 self.dashes = 0
-                self._reset_level(keep_state = True)
                 self.state = "title"
-                run_start_screen()
-            
+                run_pregame_sequence()
+                self._reset_level(keep_state = True)
+
             elif self.state == "game_over":
                 self.current_level = 1
                 self.dashes = 0
-                self._reset_level(keep_state = True)
                 self.state = "title"
-                run_start_screen()
+                run_pregame_sequence()
+                self._reset_level(keep_state = True)
 
             else:
                 self.state = "play"
@@ -370,14 +373,14 @@ class Game:
             self.particles.append(p)
 
     # Cues animations and sounds for coin and dash power-up pickups
-    def _cue_item(self, item_rect: pygame.Rect, pickup_tone: Tone) -> None:
+    def _cue_item(self, item_rect: pygame.Rect, pickup_tone: object) -> None:
         if self.cue_shake:
             self._shake_for = max(self._shake_for, 0.10)
 
         if self.cue_particles:
             self._spawn_particles(item_rect.center, color = self.palette.particle, count = 18)
 
-        if pygame.mixer.get_busy() == False:
+        if pygame.mixer.get_init() is None or pygame.mixer.get_busy() == False:
             pickup_tone.play()
 
     # Handles actual use of the dash power-up item, as well as animations and sounds
@@ -521,7 +524,7 @@ class Game:
 
         # Defining HUD Element Strings
         level_string = f"Level: {self.current_level}  "
-        coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level)}  "
+        coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level, 0)}  "
         dashes_string = f"Dashes: {self.dashes}  "
         hp_string = f"HP: {self.player.hp}  "
 
@@ -572,7 +575,11 @@ class Game:
         player_image = self.player.image
         if self.cue_flash and self.player.flash_for > 0:
             player_image = player_image.copy()
-            player_image.fill((255, 255, 255, 120), special_flags = pygame.BLEND_RGBA_ADD)
+            if player_image.get_flags() & pygame.SRCALPHA:
+                player_image.fill((255, 255, 255, 120), special_flags=pygame.BLEND_RGBA_ADD)
+            else:
+                player_image = player_image.convert_alpha()
+                player_image.fill((255, 255, 255, 120), special_flags=pygame.BLEND_RGBA_ADD)
         self.screen.blit(player_image, self.player.rect.move(cam))
 
         for p in self.particles:

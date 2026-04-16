@@ -1,13 +1,27 @@
-import pygame
+import sys
+
+try:
+    import pygame
+except ModuleNotFoundError:
+    print("Pygame is not installed.", file=sys.stderr)
+    print("From this folder run:", file=sys.stderr)
+    print("  python3 -m venv .venv", file=sys.stderr)
+    print("  source .venv/bin/activate   # Windows: .venv\\Scripts\\activate", file=sys.stderr)
+    print("  python3 -m pip install -r requirements.txt", file=sys.stderr)
+    print("  python3 main.py", file=sys.stderr)
+    sys.exit(1)
 
 from anim_feedback.game import Game
-from anim_feedback.start_screen import *
+from anim_feedback.game_config import FPS
+from anim_feedback.pregame import run_pregame_sequence
+
 
 def main() -> None:
     pygame.init()
     pygame.display.set_caption("Don't Crumble")
 
-    run_start_screen()  # Shows the start screen, returns when Enter is pressed
+    run_pregame_sequence()
+    pygame.event.clear()
 
     game = Game()
     clock = pygame.time.Clock()

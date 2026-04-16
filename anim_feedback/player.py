@@ -2,12 +2,39 @@ import pygame
 
 from .animation import Animation
 from .game_config import *
+from .kenney_character import KenneyCharacterChoice, get_selected_character
+from .kenney_shape_atlas import KenneyShapeAtlas
+
+_kenney_atlas: KenneyShapeAtlas | None = None
+_kenney_load_attempted = False
+
+
+def _get_kenney_atlas() -> KenneyShapeAtlas | None:
+    global _kenney_atlas, _kenney_load_attempted
+    if _kenney_load_attempted:
+        return _kenney_atlas
+    _kenney_load_attempted = True
+    _kenney_atlas = KenneyShapeAtlas.try_load()
+    return _kenney_atlas
+
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, center: tuple[int, int], *, color: pygame.Color) -> None:
+    def __init__(
+        self,
+        center: tuple[int, int],
+        *,
+        color: pygame.Color,
+        character: KenneyCharacterChoice | None = None,
+    ) -> None:
         super().__init__()
 
-        self.anims = _make_player_anims(color)
+        self._character = character if character is not None else get_selected_character()
+
+        atlas = _get_kenney_atlas()
+        if atlas is not None:
+            self.anims = _make_kenney_player_anims(atlas, self._character)
+        else:
+            self.anims = _make_player_anims(color)
         self.state = "idle"
         self.prev_state = "idle"
 
@@ -53,6 +80,42 @@ class Player(pygame.sprite.Sprite):
             self.invincible_for = max(0.0, self.invincible_for - dt)
         elif self.flash_for > 0:
             self.flash_for = max(0.0, self.flash_for - dt)
+
+
+def _make_kenney_player_anims(atlas: KenneyShapeAtlas, choice: KenneyCharacterChoice) -> dict[str, Animation]:
+    def _body_or_fallback(family: str, shape: str) -> str:
+        key = f"{family}_body_{shape}.png"
+        if atlas.has_texture(key):
+            return key
+        return f"{family}_body_squircle.png"
+
+    body_main = _body_or_fallback(choice.family, choice.shape)
+    main_face = choice.face
+
+    idle = [atlas.composite_safe(body_main, main_face)]
+    # Single-frame run avoids duplicate composites; movement reads from velocity, not bobbing faces.
+    run_frames = [atlas.composite_safe(body_main, main_face) for _ in range(4)]
+
+    hurt_body = _body_or_fallback("red", choice.shape)
+    hurt_frames = [
+        atlas.composite_safe(hurt_body, "face_h.png"),
+        atlas.composite_safe(hurt_body, "face_g.png"),
+    ]
+    cheer_family = "green" if choice.family == "yellow" else "yellow"
+    cheer_body = _body_or_fallback(cheer_family, choice.shape)
+    collect_frames = [
+        atlas.composite_safe(cheer_body, "face_c.png"),
+        atlas.composite_safe(cheer_body, "face_k.png"),
+        atlas.composite_safe(cheer_body, "face_c.png"),
+        atlas.composite_safe(cheer_body, "face_l.png"),
+    ]
+    return {
+        "idle": Animation(idle, fps=1.0),
+        "run": Animation(run_frames, fps=10.0),
+        "hurt": Animation(hurt_frames, fps=8.0),
+        "collect": Animation(collect_frames, fps=4.0),
+    }
+
 
 def _make_player_anims(color: pygame.Color) -> dict[str, Animation]:
     idle = [_draw_player_frame(color, leg_phase=0, eye_open=True)]
