@@ -1,0 +1,9 @@
+{
+  "selected_character": {
+    "family": "yellow",
+    "shape": "squircle",
+    "face": "face_e.png"
+  },
+  "best_level_reached": 3,
+  "best_clear_time_s": null
+}

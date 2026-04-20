@@ -6,12 +6,18 @@ import random
 from .audio import *
 from .items import Coin, Dash_Power_Up, Heart
 from .game_config import *
-from .hazard import Hazard
+from .hazard import Hazard, MovingHazard
 from .levels import LEVELS
 from .level_utils import *
 from .palette import Palette
 from .particle import Particle
 from .player import Player
+from .persistence import (
+    get_best_clear_time_s,
+    get_best_level_reached,
+    record_best_clear_time_s,
+    record_best_level_reached,
+)
 from .pregame import run_pregame_sequence
 from .tile_manager import TileManager
 
@@ -53,9 +59,11 @@ class Game:
         self.dash_power_ups: pygame.sprite.Group[Dash_Power_Up] = pygame.sprite.Group()
         self.hearts: pygame.sprite.Group[Heart] = pygame.sprite.Group()
         self.coin_pickup_tone = make_tone(880, 0.05, 0.20)
-        self.dash_power_up_pickup_tone = make_tone(880, 0.05, 0.20)
-        self.heart_pickup_tone = make_tone(880, 0.05, 0.20)
-        self.player_hit_tone = make_tone(160, 0.16, 0.25)
+        self.dash_power_up_pickup_tone = make_tone(1250, 0.06, 0.22)
+        self.heart_pickup_tone = make_tone(720, 0.09, 0.24)
+        self.player_hit_tone = make_tone(150, 0.18, 0.28)
+        self.level_cleared_tone = make_tone(980, 0.12, 0.24)
+        self.level_cleared_tone_2 = make_tone(1320, 0.10, 0.22)
         self.game_over_tone = make_tone(1000, 0.20, 0.20)
 
         self.player = Player(self.playfield.center, color = self.palette.player)
@@ -65,9 +73,14 @@ class Game:
 
         self._shake_for = 0.0
         self._hitstop_for = 0.0
+        self._damage_pulse_for = 0.0
+        self._clear_pulse_for = 0.0
 
         self.level_data = []
         self.current_level = 1   # Change this value to test any level without having to start from Level 1
+        self.run_elapsed_s = 0.0
+        self.best_level_reached = get_best_level_reached()
+        self.best_clear_time_s = get_best_clear_time_s()
 
         self.dashes = 0
         self.dash_for = 0.0
@@ -142,11 +155,19 @@ class Game:
 
                 # --- HAZARD ---
                 elif tile == "H":
-                    hz = Hazard(
-                        (x, y),
-                        color = self.palette.hazard,
-                        spin_speed_dps = 200 * self._hazard_speed_mult(),
-                    )
+                    if self.current_level >= 3 and (row_idx + col_idx) % 3 == 0:
+                        hz = MovingHazard(
+                            (x, y),
+                            color=self.palette.hazard,
+                            spin_speed_dps=190 * self._hazard_speed_mult(),
+                            speed=min(260.0, 120.0 + 18.0 * self.current_level),
+                        )
+                    else:
+                        hz = Hazard(
+                            (x, y),
+                            color=self.palette.hazard,
+                            spin_speed_dps=200 * self._hazard_speed_mult(),
+                        )
                     self.hazards.add(hz)
                     self.all_sprites.add(hz)
 
@@ -246,6 +267,10 @@ class Game:
         # Handle "paused" state input for returning to the title screen
         if self.state == "paused" and event.key == pygame.K_t: 
             self.state = "return_to_title_screen"
+        if self.state == "paused" and event.key == pygame.K_r:
+            self._reset_level(keep_state = True)
+            self.state = "play"
+            return
 
         # Handle "return_to_title_screen" state input
         if self.state == "return_to_title_screen": 
@@ -282,6 +307,7 @@ class Game:
             else:
                 self.state = "play"
                 self._reset_level(keep_state = True)
+                self.run_elapsed_s = 0.0
 
         if self.dashes > 0 and self.state == "play" and (event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT):
             self._dash_power_up_use(self.player.rect, dt = 0.0)
@@ -290,9 +316,11 @@ class Game:
         self.pending_hp = self.player.hp
         self.pending_dashes = self.dashes
         self.state = "level_cleared"
+        self._cue_level_cleared()
 
     def _level_cleared(self) -> None:
         self.current_level += 1
+        self.best_level_reached = record_best_level_reached(self.current_level)
         
         self.all_sprites.empty()
         self.walls.empty()
@@ -310,6 +338,13 @@ class Game:
 
         self.all_sprites.add(self.player)
         self._build_playfield_content()
+
+    def _cue_level_cleared(self) -> None:
+        if self.cue_shake:
+            self._shake_for = max(self._shake_for, 0.14)
+        self._clear_pulse_for = max(self._clear_pulse_for, 0.20)
+        self.level_cleared_tone.play()
+        self.level_cleared_tone_2.play()
 
     def _read_move(self) -> pygame.Vector2:
         keys = pygame.key.get_pressed()
@@ -394,6 +429,7 @@ class Game:
     def _cue_hit(self, source_rect: pygame.Rect) -> None:
         if self.cue_flash:
             self.player.flash_for = FLASH_DURATION
+            self._damage_pulse_for = max(self._damage_pulse_for, 0.14)
 
         if self.cue_hitstop:
             self._hitstop_for = max(self._hitstop_for, 0.06)
@@ -431,6 +467,11 @@ class Game:
         self.game_over_tone.play()
 
     def update(self, dt: float) -> None:
+        if self._damage_pulse_for > 0:
+            self._damage_pulse_for = max(0.0, self._damage_pulse_for - dt)
+        if self._clear_pulse_for > 0:
+            self._clear_pulse_for = max(0.0, self._clear_pulse_for - dt)
+
         if self._shake_for > 0:
             self._shake_for = max(0.0, self._shake_for - dt)
 
@@ -444,6 +485,7 @@ class Game:
 
         if self.state != "play":
             return
+        self.run_elapsed_s += dt
 
         move = self._read_move()
         self.player.vel.update(move * self.player.speed)
@@ -488,7 +530,7 @@ class Game:
         self.coins.update(dt)
         self.dash_power_ups.update(dt)
         self.hearts.update(dt)
-        self.hazards.update(dt)
+        self.hazards.update(dt, self.walls, self.playfield)
         self.player.update(dt)
         self.tile_manager.update(dt)
 
@@ -496,6 +538,9 @@ class Game:
         if len(self.coins) == 0 and self._player_at_right_exit():
             if self.current_level >= len(LEVELS):
                 self.state = "won"
+                self.best_level_reached = record_best_level_reached(self.current_level)
+                self.best_clear_time_s = record_best_clear_time_s(self.run_elapsed_s)
+                self._cue_level_cleared()
             else:
                 self._advance_to_next_level()
         
@@ -527,6 +572,8 @@ class Game:
         coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level, 0)}  "
         dashes_string = f"Dashes: {self.dashes}  "
         hp_string = f"HP: {self.player.hp}  "
+        best_level_string = f"Best Lv: {self.best_level_reached}  "
+        best_time_string = f"Best Time: {self._fmt_time(self.best_clear_time_s) if self.best_clear_time_s else '--:--'}"
 
         # Drawing HUD Element Strings
         self._draw_text(
@@ -534,10 +581,11 @@ class Game:
             (12, 16),
             self.palette.text
         )
+        self._draw_text((best_level_string + best_time_string), (12, 36), self.palette.subtle)
 
         self._draw_text(
             ("Dashing!" if self.dash_for > 0 else ""), 
-            (12, 32), 
+            (12, 54), 
             self.palette.text
         )
 
@@ -664,6 +712,11 @@ class Game:
                 y = self.playfield.centery + 60,
                 color = self.palette.menu_muted,
             )
+            self._draw_centered(
+                "Restart Level: R",
+                y = self.playfield.centery + 100,
+                color = self.palette.menu_muted,
+            )
 
         elif self.state == "return_to_title_screen":
             self._draw_centered(
@@ -676,6 +729,18 @@ class Game:
                 y = self.playfield.centery + 40,
                 color = self.palette.menu_muted,
             )
+
+        # Small pulse feedback for damage / level clear.
+        if self._damage_pulse_for > 0:
+            a = int(75 * _clamp(self._damage_pulse_for / 0.14, 0.0, 1.0))
+            overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            overlay.fill((200, 30, 30, a))
+            self.screen.blit(overlay, (0, 0))
+        if self._clear_pulse_for > 0:
+            a = int(65 * _clamp(self._clear_pulse_for / 0.20, 0.0, 1.0))
+            overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            overlay.fill((240, 215, 120, a))
+            self.screen.blit(overlay, (0, 0))
 
     # Used for displaying HUD text
     def _draw_text(self, text: str, pos: tuple[int, int], color: pygame.Color) -> None:
@@ -696,3 +761,8 @@ class Game:
         pygame.draw.rect(self.screen, self.palette.menu_panel_border, bg_rect, 1, border_radius = 6)
         self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)
+
+    def _fmt_time(self, seconds: float) -> str:
+        total = max(0, int(round(seconds)))
+        m, s = divmod(total, 60)
+        return f"{m:02d}:{s:02d}"

@@ -8,12 +8,12 @@ import pygame
 
 from .game_config import FPS, SCREEN_H, SCREEN_W
 from .kenney_character import (
-    DEFAULT_CHARACTER,
     FACES,
     FAMILIES,
     SHAPES,
     KenneyCharacterChoice,
     body_texture_key,
+    get_selected_character,
 )
 from .kenney_shape_atlas import KenneyShapeAtlas
 
@@ -44,9 +44,10 @@ def run_character_select() -> KenneyCharacterChoice:
     clock = pygame.time.Clock()
     atlas = KenneyShapeAtlas.try_load()
 
-    fi = FAMILIES.index(DEFAULT_CHARACTER.family)
-    si = SHAPES.index(DEFAULT_CHARACTER.shape)
-    face_i = FACES.index(DEFAULT_CHARACTER.face) if DEFAULT_CHARACTER.face in FACES else 1
+    current = get_selected_character()
+    fi = FAMILIES.index(current.family)
+    si = SHAPES.index(current.shape)
+    face_i = FACES.index(current.face) if current.face in FACES else 1
 
     title_font = pygame.font.SysFont(None, 36)
     body_font = pygame.font.SysFont(None, 26)

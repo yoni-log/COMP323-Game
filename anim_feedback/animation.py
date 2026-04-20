@@ -38,6 +38,8 @@ def _make_coin_frames(color: pygame.Color) -> list[pygame.Surface]:
 
         pygame.draw.circle(surf, color, (cx, cy), r)
         pygame.draw.circle(surf, pygame.Color("#000000"), (cx, cy), r, 2)
+        # Coin marker: vertical notch for quick recognition.
+        pygame.draw.rect(surf, pygame.Color("#2a1b0a"), pygame.Rect(cx - 2, cy - r // 2, 4, r), border_radius=2)
 
         sparkle = pygame.Color("#ffffff")
         sparkle.a = 180
@@ -67,6 +69,17 @@ def _make_dash_power_up_frames(color: pygame.Color) -> list[pygame.Surface]:
         ]
         pygame.draw.polygon(surf, color, points)
         pygame.draw.polygon(surf, pygame.Color("#000000"), points, 2)
+        # Dash marker: lightning-styled slash.
+        bolt = [
+            (cx - 2, cy - r + 4),
+            (cx + 2, cy - r + 4),
+            (cx - 1, cy + 1),
+            (cx + 3, cy + 1),
+            (cx - 3, cy + r - 3),
+            (cx - 1, cy + 2),
+            (cx - 4, cy + 2),
+        ]
+        pygame.draw.polygon(surf, pygame.Color("#ffffff"), bolt)
 
         sparkle = pygame.Color("#ffffff")
         sparkle.a = 180
@@ -98,6 +111,11 @@ def _make_heart_frames(color:pygame.Color) -> list[pygame.Surface]:
             points.append((cx + int(x * r / 16), cy - int(y * r / 13)))
 
         pygame.draw.polygon(surf, color, points)
+        pygame.draw.polygon(surf, pygame.Color("#000000"), points, 2)
+        # Health marker: white plus sign.
+        plus_w = max(1, r // 4)
+        pygame.draw.rect(surf, pygame.Color("#ffffff"), pygame.Rect(cx - plus_w // 2, cy - r // 2, plus_w, r))
+        pygame.draw.rect(surf, pygame.Color("#ffffff"), pygame.Rect(cx - r // 2, cy - plus_w // 2, r, plus_w))
 
         sparkle = pygame.Color("#ffffff")
         sparkle.a = 180

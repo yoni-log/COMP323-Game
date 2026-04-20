@@ -50,8 +50,9 @@ class TileManager:
                 tile.fade = min(1.0, tile.fade + dt / FADE_DURATION * self._fade_speed_mult)
 
     def draw(self, surface: pygame.Surface, cam: tuple[int, int]) -> None:
-        # Bright base color for tiles so they contrast clearly with the darker border
-        base = pygame.Color("#ffdc64")
+        safe = pygame.Color("#ffdc64")
+        warn = pygame.Color("#ff9f1a")
+        danger = pygame.Color("#e74c3c")
         sw = surface.get_width()
         for tile in self.tiles:
             screen_rect = tile.rect.move(cam)
@@ -59,11 +60,21 @@ class TileManager:
             if screen_rect.right < 0 or screen_rect.left > sw:
                 continue
             f = tile.fade
-            # Fade from bright yellow to black as the tile crumbles
-            r = int(base.r * (1.0 - f))
-            g = int(base.g * (1.0 - f))
-            b = int(base.b * (1.0 - f))
-            pygame.draw.rect(surface, (r, g, b), screen_rect)
-            # Use the panel color as a consistent darker border for clear separation
-            border = (self.panel_color.r, self.panel_color.g, self.panel_color.b)
+            if f < DEADLY_AT:
+                t = f / DEADLY_AT
+                col = safe.lerp(warn, t)
+                border = (self.panel_color.r, self.panel_color.g, self.panel_color.b)
+            else:
+                # Deadly tiles shift to red then darken heavily for high contrast.
+                t = (f - DEADLY_AT) / (1.0 - DEADLY_AT)
+                col = danger.lerp(pygame.Color("#1a0707"), _clamp01(t))
+                border = (120, 25, 25)
+            pygame.draw.rect(surface, col, screen_rect)
             pygame.draw.rect(surface, border, screen_rect, 1)
+            if tile.is_deadly and (int(self._elapsed * 8) % 2 == 0):
+                pygame.draw.line(surface, pygame.Color("#ffd9d9"), screen_rect.topleft, screen_rect.bottomright, 1)
+                pygame.draw.line(surface, pygame.Color("#ffd9d9"), screen_rect.topright, screen_rect.bottomleft, 1)
+
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
