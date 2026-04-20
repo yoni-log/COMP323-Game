@@ -584,8 +584,8 @@ class Game:
         self._draw_text((best_level_string + best_time_string), (12, 36), self.palette.subtle)
 
         self._draw_text(
-            ("Dashing!" if self.dash_for > 0 else ""), 
-            (12, 54), 
+            ("You're dashing!" if self.dash_for > 0 else ""), 
+            (778, 36), 
             self.palette.text
         )
 

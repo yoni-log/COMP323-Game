@@ -41,9 +41,12 @@ def _make_coin_frames(color: pygame.Color) -> list[pygame.Surface]:
         # Coin marker: vertical notch for quick recognition.
         pygame.draw.rect(surf, pygame.Color("#2a1b0a"), pygame.Rect(cx - 2, cy - r // 2, 4, r), border_radius=2)
 
+        # Removing sparkle from coins
+        '''
         sparkle = pygame.Color("#ffffff")
         sparkle.a = 180
         pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
+        '''
 
         frames.append(surf)
 
@@ -117,9 +120,12 @@ def _make_heart_frames(color:pygame.Color) -> list[pygame.Surface]:
         pygame.draw.rect(surf, pygame.Color("#ffffff"), pygame.Rect(cx - plus_w // 2, cy - r // 2, plus_w, r))
         pygame.draw.rect(surf, pygame.Color("#ffffff"), pygame.Rect(cx - r // 2, cy - plus_w // 2, r, plus_w))
 
+        # Removing sparkle from hearts
+        '''
         sparkle = pygame.Color("#ffffff")
         sparkle.a = 180
         pygame.draw.circle(surf, sparkle, (cx - r // 3, cy - r // 3), max(1, r // 5))
+        '''
 
         frames.append(surf)
 
