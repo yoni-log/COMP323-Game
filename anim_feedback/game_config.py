@@ -8,7 +8,7 @@ FPS = 60
 # Player values
 PLAYER_HEALTH = 3
 PLAYER_SPEED = 320
-INVINCIBLE_FOR = 0.85
+INVINCIBLE_FOR = 3.0
 COLLECT_DURATION = 0.5
 FLASH_DURATION = 0.18     # controls player hit animation
 DASH_DURATION = 1.5

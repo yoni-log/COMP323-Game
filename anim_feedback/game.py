@@ -572,7 +572,7 @@ class Game:
         coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level, 0)}  "
         dashes_string = f"Dashes: {self.dashes}  "
         hp_string = f"HP: {self.player.hp}  "
-        best_level_string = f"Best Lv: {self.best_level_reached}  "
+        best_level_string = f"Best Level: {self.best_level_reached}  "
         best_time_string = f"Best Time: {self._fmt_time(self.best_clear_time_s) if self.best_clear_time_s else '--:--'}"
 
         # Drawing HUD Element Strings
@@ -583,9 +583,18 @@ class Game:
         )
         self._draw_text((best_level_string + best_time_string), (12, 36), self.palette.subtle)
 
+        dash_timer_string = f"Dashing for: {round(self.dash_for, 1)} seconds"
+        invincible_timer_string = f"Invincible for: {round(self.player.invincible_for, 1)} seconds"
+
         self._draw_text(
-            ("You're dashing!" if self.dash_for > 0 else ""), 
-            (778, 36), 
+            (dash_timer_string if self.dash_for > 0 and not self.player.is_invincible else ""), 
+            (715, 36), 
+            self.palette.text
+        )
+
+        self._draw_text(
+            (invincible_timer_string if self.player.is_invincible else ""), 
+            (705, 36), 
             self.palette.text
         )
 
