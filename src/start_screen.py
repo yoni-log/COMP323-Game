@@ -31,7 +31,6 @@ font_sub: pygame.font.Font | None = None
 font_prompt: pygame.font.Font | None = None
 font_ctrl: pygame.font.Font | None = None
 
-
 def _ensure_start_screen_ready() -> None:
     """Create window, clock, and fonts once. Importing this module must not touch video/audio."""
     global _screen, _clock, font_title, font_sub, font_prompt, font_ctrl
@@ -46,7 +45,6 @@ def _ensure_start_screen_ready() -> None:
     font_sub = pygame.font.SysFont("impact", 28)
     font_prompt = pygame.font.SysFont("couriernew", 22, bold=True)
     font_ctrl = pygame.font.SysFont("couriernew", 18)
-
 
 # --- Falling Tile Particles ---
 class FallingTile:
@@ -93,7 +91,6 @@ class FallingTile:
         rect = rotated.get_rect(center=(int(self.x), int(self.y)))
         surface.blit(rotated, rect)
 
-
 # --- Background gradient ---
 def draw_gradient(surface):
     for y in range(HEIGHT):
@@ -102,7 +99,6 @@ def draw_gradient(surface):
         g = int(BG_TOP[1] + (BG_BOTTOM[1] - BG_TOP[1]) * t)
         b = int(BG_TOP[2] + (BG_BOTTOM[2] - BG_TOP[2]) * t)
         pygame.draw.line(surface, (r, g, b), (0, y), (WIDTH, y))
-
 
 # --- Ground crack line at bottom ---
 def draw_ground_cracks(surface, tick):
@@ -127,7 +123,6 @@ def draw_ground_cracks(surface, tick):
             pygame.draw.rect(surface, (80, 42, 12), rect, border_radius=2)
             pygame.draw.rect(surface, (55, 28, 8), rect, 1, border_radius=2)
 
-
 # --- Title with shake effect ---
 def draw_title(surface, tick):
     assert font_title is not None and font_sub is not None
@@ -141,14 +136,12 @@ def draw_title(surface, tick):
     sub = font_sub.render("A SURVIVAL PLATFORMER", True, (200, 140, 60))
     surface.blit(sub, (WIDTH // 2 - sub.get_width() // 2, 238))
 
-
 # --- Blinking prompt ---
 def draw_prompt(surface, tick):
     assert font_prompt is not None
     if (tick // 35) % 2 == 0:
         prompt = font_prompt.render("PRESS  ENTER  TO  START", True, PROMPT_COLOR)
         surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 290))
-
 
 # --- Controls panel ---
 CONTROLS = [
@@ -160,7 +153,6 @@ CONTROLS = [
     ("CREDITS", "C"), 
     ("QUIT", "ESC")
 ]
-
 
 def draw_controls(surface):
     assert font_ctrl is not None
@@ -186,7 +178,6 @@ def draw_controls(surface):
         keys_surf = font_ctrl.render(keys, True, PROMPT_COLOR)
         surface.blit(action_surf, (panel_x + 24, y))
         surface.blit(keys_surf, (panel_x + panel_w - keys_surf.get_width() - 24, y))
-
 
 # --- Main loop ---
 def run_start_screen() -> None:

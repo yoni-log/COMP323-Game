@@ -41,7 +41,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | level_cleared | paused | level_reset_confirm | return_to_title_screen | won | game_over
+        self.state = "title"  # title | play | level_cleared | paused | level_reset_confirm | return_to_title_screen | credits | won | game_over
 
         self.cue_flash = True
         self.cue_shake = True
@@ -58,18 +58,13 @@ class Game:
         self.hazards: pygame.sprite.Group[Hazard] = pygame.sprite.Group()
         self.dash_power_ups: pygame.sprite.Group[Dash_Power_Up] = pygame.sprite.Group()
         self.hearts: pygame.sprite.Group[Heart] = pygame.sprite.Group()
-        self.coin_pickup_tone = make_tone(880, 0.05, 0.20)
-        self.dash_power_up_pickup_tone = make_tone(1250, 0.06, 0.22)
-        self.heart_pickup_tone = make_tone(720, 0.09, 0.24)
-        self.player_hit_tone = make_tone(150, 0.18, 0.28)
-        self.level_cleared_tone = make_tone(980, 0.12, 0.24)
-        self.level_cleared_tone_2 = make_tone(1320, 0.10, 0.22)
-        self.game_over_tone = make_tone(1000, 0.20, 0.20)
 
         self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
 
         self.particles: list[Particle] = []
+
+        self.audio = AudioBank()
 
         self._shake_for = 0.0
         self._hitstop_for = 0.0
@@ -238,6 +233,12 @@ class Game:
             pygame.event.post(pygame.event.Event(pygame.QUIT))
             return
 
+        if event.key == pygame.K_5:
+            self.audio.toggle_music_mute()
+
+        if event.key == pygame.K_6:
+            self.audio.toggle_sfx_mute()
+
         # Handle debug toggles with the F1 key and 1-4 keys
         if event.key == pygame.K_F1:
             self.debug = not self.debug
@@ -289,6 +290,7 @@ class Game:
                 self.current_level = 1
                 self.dashes = 0
                 self.state = "title"
+                self.audio.stop_music()
                 run_pregame_sequence()
                 self._reset_level(keep_state = True)
             elif event.key == pygame.K_n:
@@ -311,6 +313,7 @@ class Game:
                 self.current_level = 1
                 self.dashes = 0
                 self.state = "title"
+                self.audio.stop_music()
                 run_pregame_sequence()
                 self._reset_level(keep_state = True)
 
@@ -318,6 +321,7 @@ class Game:
                 self.current_level = 1
                 self.dashes = 0
                 self.state = "title"
+                self.audio.stop_music()
                 run_pregame_sequence()
                 self._reset_level(keep_state = True)
 
@@ -360,8 +364,8 @@ class Game:
         if self.cue_shake:
             self._shake_for = max(self._shake_for, 0.14)
         self._clear_pulse_for = max(self._clear_pulse_for, 0.20)
-        self.level_cleared_tone.play()
-        self.level_cleared_tone_2.play()
+        self.audio.play("level_cleared")
+        self.audio.play("level_cleared_2")
 
     def _read_move(self) -> pygame.Vector2:
         keys = pygame.key.get_pressed()
@@ -433,7 +437,7 @@ class Game:
             self._spawn_particles(item_rect.center, color = self.palette.particle, count = 18)
 
         if pygame.mixer.get_init() is None or pygame.mixer.get_busy() == False:
-            pickup_tone.play()
+            self.audio.play(pickup_tone)
 
     # Handles actual use of the dash power-up item, as well as animations and sounds
     def _dash_power_up_use(self, dash_power_up_rect: pygame.Rect, dt: float) -> None:
@@ -441,7 +445,7 @@ class Game:
         self.dash_for = DASH_DURATION
         self.player.speed *= 1.5
 
-        self._cue_item(dash_power_up_rect, self.dash_power_up_pickup_tone)
+        self._cue_item(dash_power_up_rect, "dash_power_up_pickup")
 
     def _cue_hit(self, source_rect: pygame.Rect) -> None:
         if self.cue_flash:
@@ -455,9 +459,9 @@ class Game:
             self._shake_for = max(self._shake_for, 0.18)
 
         if self.cue_particles:
-            self._spawn_particles(self.player.rect.center, color=self.palette.hazard, count=26)
+            self._spawn_particles(self.player.rect.center, color = self.palette.hazard, count=26)
 
-        self.player_hit_tone.play()
+        self._cue_item(self.player.rect, "player_hit")
 
     def _apply_damage(self, source_rect: pygame.Rect) -> None:
         if self.player.is_invincible:
@@ -481,9 +485,25 @@ class Game:
         self.state = "game_over"
         if self.cue_shake:
             self._shake_for = max(self._shake_for, 0.20)
-        self.game_over_tone.play()
+        self.audio.play("game_over")
 
     def update(self, dt: float) -> None:
+        
+        # Handling state-based background music transitions
+        if self.state == "title":
+            self.audio.play_title_state_music()
+        elif self.state == "play":
+            self.audio.play_gameplay_music()
+        elif self.state == "game_over":
+            self.audio.play_game_over_music()
+        elif self.state in ["paused", "credits", "return_to_title_screen", "level_reset_confirm"]:
+            self.audio.play_pause_music()
+        elif self.state in ["level_cleared", "won"]:
+            self.audio.play_level_cleared_won_music()
+        else:
+            if pygame.mixer.music.get_busy():
+                self.audio.stop_music()
+
         if self._damage_pulse_for > 0:
             self._damage_pulse_for = max(0.0, self._damage_pulse_for - dt)
         if self._clear_pulse_for > 0:
@@ -524,17 +544,17 @@ class Game:
         if picked:
             self.player.score += len(picked)
             self.player.trigger_collect()
-            self._cue_item(picked[0].rect, self.coin_pickup_tone)
+            self._cue_item(picked[0].rect, "coin_pickup")
 
         for picked in pygame.sprite.spritecollide(self.player, self.dash_power_ups, dokill = True):
             self.dashes += 1
             self.player.trigger_collect()
-            self._cue_item(picked.rect, self.dash_power_up_pickup_tone)
+            self._cue_item(picked.rect, "dash_power_up_pickup")
 
         for picked in pygame.sprite.spritecollide(self.player, self.hearts, dokill = True):
             self.player.hp += 1
             self.player.trigger_collect()
-            self._cue_item(picked.rect, self.heart_pickup_tone)
+            self._cue_item(picked.rect, "heart_pickup")
 
         for hz in pygame.sprite.spritecollide(self.player, self.hazards, dokill = False):
             self._apply_damage(hz.rect)
@@ -720,47 +740,57 @@ class Game:
         elif self.state == "paused":
             self._draw_centered(
                 "Paused",
-                y = self.playfield.centery - 180,
+                y = self.playfield.centery - 220,
                 color = self.palette.menu_text,
             )
             self._draw_centered(
                 "Controls:",
-                y = self.playfield.centery - 100,
+                y = self.playfield.centery - 140,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
                 "Move: Arrow keys or WASD",
-                y = self.playfield.centery - 60,
+                y = self.playfield.centery - 100,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
                 "Dash: Left or Right Shift",
+                y = self.playfield.centery - 60,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Mute Music: 5" if not self.audio.music_muted else "Unmute Music: 5", 
                 y = self.playfield.centery - 20,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Resume: P",
+                "Mute Sound Effects: 6" if not self.audio.sfx_muted else "Unmute Sound Effects: 6", 
                 y = self.playfield.centery + 20,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Restart Level: R",
+                "Resume: P",
                 y = self.playfield.centery + 60,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Return to Title Screen: T",
+                "Restart Level: R",
                 y = self.playfield.centery + 100,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Credits: C",
+                "Return to Title Screen: T",
                 y = self.playfield.centery + 140,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Quit: Esc",
+                "Credits: C",
                 y = self.playfield.centery + 180,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Quit: Esc",
+                y = self.playfield.centery + 220,
                 color = self.palette.menu_muted,
             )
 
@@ -801,13 +831,43 @@ class Game:
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                "Add attributions for external assets here.",
-                (12, 86),
+                "Press C to return to pause menu.",
+                (12, 76),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                "Press C to return to pause menu.",
+                f'"Loading screen loop" by Brandon Morris licensed CC0: https://opengameart.org/content/loading-screen-loop',
                 (12, 106),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'"Rock menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/rock-menu',
+                (12, 126),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'"Theme Menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/theme-menu',
+                (12, 146),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'"Tragic ambient main menu" by brandon75689 licensed OGA-BY 3.0 or CC0:',
+                (12, 166),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                '           https://opengameart.org/content/tragic-ambient-main-menu',
+                (12, 186),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'"Menu Music Loop" by HorrorPen licensed CC-BY 3.0: https://opengameart.org/content/menu-music-loop',
+                (12, 206),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'"Victory Theme for RPG" by cynicmusic licensed CC0: https://opengameart.org/content/victory-theme-for-rpg',
+                (12, 226),
                 color = self.palette.menu_text,
             )
 
