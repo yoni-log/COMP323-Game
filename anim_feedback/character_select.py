@@ -123,8 +123,8 @@ def run_character_select() -> KenneyCharacterChoice:
         screen.blit(preview, pr)
 
         hints = [
-            "Enter — start game",
-            "Escape — quit",
+            "Enter — Start Game",
+            "Escape — Quit",
         ]
         y0 = SCREEN_H - 88
         for i, line in enumerate(hints):

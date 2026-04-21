@@ -263,10 +263,6 @@ class Game:
                 self.state = "paused"
             elif self.state == "paused":
                 self.state = "play"
-
-        # Handle "paused" state input for returning to the title screen
-        if self.state == "paused" and event.key == pygame.K_t: 
-            self.state = "return_to_title_screen"
         
         # Handle "paused" state input for reseting the level
         if self.state == "paused" and event.key == pygame.K_r:
@@ -283,6 +279,10 @@ class Game:
                 self.state = "paused"
                 return
 
+        # Handle "paused" state input for returning to the title screen
+        if self.state == "paused" and event.key == pygame.K_t: 
+            self.state = "return_to_title_screen"
+
         # Handle "return_to_title_screen" state input
         if self.state == "return_to_title_screen": 
             if event.key == pygame.K_y:
@@ -294,6 +294,12 @@ class Game:
             elif event.key == pygame.K_n:
                 self.state = "paused"
         
+        if event.key == pygame.K_c:
+            if self.state == "paused":
+                self.state = "credits"
+            elif self.state == "credits":
+                self.state = "paused"
+
         # State transitions that require pressing the Enter key
         if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
             
@@ -714,7 +720,7 @@ class Game:
         elif self.state == "paused":
             self._draw_centered(
                 "Paused",
-                y = self.playfield.centery - 140,
+                y = self.playfield.centery - 180,
                 color = self.palette.menu_text,
             )
             self._draw_centered(
@@ -743,8 +749,18 @@ class Game:
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
-                "Return to title screen: T",
+                "Return to Title Screen: T",
                 y = self.playfield.centery + 100,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Credits: C",
+                y = self.playfield.centery + 140,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Quit: Esc",
+                y = self.playfield.centery + 180,
                 color = self.palette.menu_muted,
             )
 
@@ -775,6 +791,24 @@ class Game:
                 "Y - Yes, N - No",
                 y = self.playfield.centery + 40,
                 color = self.palette.menu_muted,
+            )
+
+        elif self.state == "credits":
+            self.screen.fill((0, 0, 0))
+            self._draw_centered(
+                "Credits:",
+                y = self.playfield.centery - 280,
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "Add attributions for external assets here.",
+                (12, 86),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "Press C to return to pause menu.",
+                (12, 106),
+                color = self.palette.menu_text,
             )
 
         # Small pulse feedback for damage / level clear.

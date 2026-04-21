@@ -147,24 +147,26 @@ def draw_prompt(surface, tick):
     assert font_prompt is not None
     if (tick // 35) % 2 == 0:
         prompt = font_prompt.render("PRESS  ENTER  TO  START", True, PROMPT_COLOR)
-        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 300))
+        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 290))
 
 
 # --- Controls panel ---
 CONTROLS = [
-    ("MOVE", "WASD or Arrow Keys"),
-    ("DASH", "SHIFT"),
-    ("PAUSE", "P"),
-    ("RETURN TO TITLE", "T"),
-    ("QUIT", "ESC"),
+    ("MOVE", "WASD or Arrow Keys"), 
+    ("DASH", "SHIFT"), 
+    ("PAUSE", "P"), 
+    ("RESTART LEVEL", "R"), 
+    ("RETURN TO TITLE", "T"), 
+    ("CREDITS", "C"), 
+    ("QUIT", "ESC")
 ]
 
 
 def draw_controls(surface):
     assert font_ctrl is not None
-    panel_w, panel_h = 360, 165
+    panel_w, panel_h = 360, 210
     panel_x = WIDTH // 2 - panel_w // 2
-    panel_y = 360
+    panel_y = 340
     panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
     pygame.draw.rect(panel_surf, (0, 0, 0, 120), (0, 0, panel_w, panel_h), border_radius=8)
     pygame.draw.rect(panel_surf, (180, 120, 40, 160), (0, 0, panel_w, panel_h), 2, border_radius=8)
