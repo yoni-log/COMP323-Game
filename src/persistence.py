@@ -17,6 +17,12 @@ def _default_data() -> dict:
         },
         "best_level_reached": 1,
         "best_clear_time_s": None,
+        "settings": {
+            "music_volume": 0.35,
+            "sfx_volume": 0.65,
+            "screen_shake": True,
+            "pulse_effects": True,
+        },
     }
 
 
@@ -103,3 +109,30 @@ def record_best_clear_time_s(seconds: float) -> float:
     data["best_clear_time_s"] = best
     save_progress(data)
     return best
+
+
+def get_settings() -> dict:
+    data = load_progress()
+    settings = data.get("settings", {})
+    if not isinstance(settings, dict):
+        settings = {}
+    defaults = _default_data()["settings"]
+    out = defaults.copy()
+    out.update(settings)
+
+    out["music_volume"] = max(0.0, min(1.0, float(out.get("music_volume", defaults["music_volume"]))))
+    out["sfx_volume"] = max(0.0, min(1.0, float(out.get("sfx_volume", defaults["sfx_volume"]))))
+    out["screen_shake"] = bool(out.get("screen_shake", defaults["screen_shake"]))
+    out["pulse_effects"] = bool(out.get("pulse_effects", defaults["pulse_effects"]))
+    return out
+
+
+def save_settings(settings: dict) -> None:
+    current = load_progress()
+    current["settings"] = {
+        "music_volume": max(0.0, min(1.0, float(settings.get("music_volume", 0.35)))),
+        "sfx_volume": max(0.0, min(1.0, float(settings.get("sfx_volume", 0.65)))),
+        "screen_shake": bool(settings.get("screen_shake", True)),
+        "pulse_effects": bool(settings.get("pulse_effects", True)),
+    }
+    save_progress(current)

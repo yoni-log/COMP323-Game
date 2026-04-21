@@ -15,8 +15,10 @@ from .player import Player
 from .persistence import (
     get_best_clear_time_s,
     get_best_level_reached,
+    get_settings,
     record_best_clear_time_s,
     record_best_level_reached,
+    save_settings,
 )
 from .pregame import run_pregame_sequence
 from .tile_manager import TileManager
@@ -41,12 +43,15 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | level_cleared | paused | level_reset_confirm | return_to_title_screen | won | game_over
+        self.state = "title"  # title | play | level_cleared | paused | settings | return_to_title_screen | won | game_over
 
         self.cue_flash = True
         self.cue_shake = True
         self.cue_hitstop = True
         self.cue_particles = True
+        self.settings = get_settings()
+        self._settings_index = 0
+        self._settings_return_state = "paused"
 
         self.rng = random.Random(5)
         # Mixer often fails on macOS (CoreAudio) after window/display changes; game must still run.
@@ -65,6 +70,7 @@ class Game:
         self.level_cleared_tone = make_tone(980, 0.12, 0.24)
         self.level_cleared_tone_2 = make_tone(1320, 0.10, 0.22)
         self.game_over_tone = make_tone(1000, 0.20, 0.20)
+        self._apply_audio_settings()
 
         self.player = Player(self.playfield.center, color = self.palette.player)
         self.all_sprites.add(self.player)
@@ -229,12 +235,44 @@ class Game:
         if not keep_state:
             self.state = "play"
 
+    def _can_shake(self) -> bool:
+        return self.cue_shake and bool(self.settings.get("screen_shake", True))
+
+    def _pulse_enabled(self) -> bool:
+        return bool(self.settings.get("pulse_effects", True))
+
+    def _apply_audio_settings(self) -> None:
+        sfx = float(self.settings.get("sfx_volume", 0.65))
+        for tone in (
+            self.coin_pickup_tone,
+            self.dash_power_up_pickup_tone,
+            self.heart_pickup_tone,
+            self.player_hit_tone,
+            self.level_cleared_tone,
+            self.level_cleared_tone_2,
+            self.game_over_tone,
+        ):
+            tone.set_volume(sfx)
+        if pygame.mixer.get_init() is not None:
+            pygame.mixer.music.set_volume(float(self.settings.get("music_volume", 0.35)))
+
     def handle_event(self, event: pygame.event.Event) -> None:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.state == "title" and self._title_settings_button_rect().collidepoint(event.pos):
+                self.state = "settings"
+                self._settings_return_state = "title"
+                self._settings_index = 0
+                return
+
         if event.type != pygame.KEYDOWN:
             return
 
-        # Quit the game using the escape key from any state
+        # Escape backs out of settings; otherwise quits the game.
         if event.key == pygame.K_ESCAPE:
+            if self.state == "settings":
+                save_settings(self.settings)
+                self.state = self._settings_return_state
+                return
             pygame.event.post(pygame.event.Event(pygame.QUIT))
             return
 
@@ -263,25 +301,48 @@ class Game:
                 self.state = "paused"
             elif self.state == "paused":
                 self.state = "play"
-        
-        # Handle "paused" state input for reseting the level
-        if self.state == "paused" and event.key == pygame.K_r:
-            self.state = "level_reset_confirm"
 
-        # Handle "level_reset_confirm" state input
-        if self.state == "level_reset_confirm":
-            if event.key == pygame.K_y:
-                self._reset_level(keep_state = True)
-                self.dashes = 0     # Prevents an exploit in which the player can farm dash power-ups by repeatedly resetting the level
-                self.state = "play"
-                return
-            elif event.key == pygame.K_n:
-                self.state = "paused"
-                return
+        if self.state == "title" and event.key == pygame.K_o:
+            self.state = "settings"
+            self._settings_return_state = "title"
+            self._settings_index = 0
+            return
 
         # Handle "paused" state input for returning to the title screen
         if self.state == "paused" and event.key == pygame.K_t: 
             self.state = "return_to_title_screen"
+        if self.state == "paused" and event.key == pygame.K_o:
+            self.state = "settings"
+            self._settings_return_state = "paused"
+            self._settings_index = 0
+            return
+        if self.state == "paused" and event.key == pygame.K_r:
+            self._reset_level(keep_state = True)
+            self.state = "play"
+            return
+
+        if self.state == "settings":
+            labels = ("music_volume", "sfx_volume", "screen_shake", "pulse_effects")
+            if event.key == pygame.K_UP:
+                self._settings_index = (self._settings_index - 1) % len(labels)
+                return
+            if event.key == pygame.K_DOWN:
+                self._settings_index = (self._settings_index + 1) % len(labels)
+                return
+            if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                key = labels[self._settings_index]
+                step = 0.05 if event.key == pygame.K_RIGHT else -0.05
+                if key in {"music_volume", "sfx_volume"}:
+                    self.settings[key] = max(0.0, min(1.0, float(self.settings[key]) + step))
+                    self._apply_audio_settings()
+                else:
+                    self.settings[key] = not bool(self.settings[key])
+                save_settings(self.settings)
+                return
+            if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                save_settings(self.settings)
+                self.state = self._settings_return_state
+                return
 
         # Handle "return_to_title_screen" state input
         if self.state == "return_to_title_screen": 
@@ -294,12 +355,6 @@ class Game:
             elif event.key == pygame.K_n:
                 self.state = "paused"
         
-        if event.key == pygame.K_c:
-            if self.state == "paused":
-                self.state = "credits"
-            elif self.state == "credits":
-                self.state = "paused"
-
         # State transitions that require pressing the Enter key
         if self.state in {"title", "level_cleared", "game_over", "won"} and event.key == pygame.K_RETURN:
             
@@ -357,9 +412,10 @@ class Game:
         self._build_playfield_content()
 
     def _cue_level_cleared(self) -> None:
-        if self.cue_shake:
+        if self._can_shake():
             self._shake_for = max(self._shake_for, 0.14)
-        self._clear_pulse_for = max(self._clear_pulse_for, 0.20)
+        if self._pulse_enabled():
+            self._clear_pulse_for = max(self._clear_pulse_for, 0.20)
         self.level_cleared_tone.play()
         self.level_cleared_tone_2.play()
 
@@ -426,7 +482,7 @@ class Game:
 
     # Cues animations and sounds for coin and dash power-up pickups
     def _cue_item(self, item_rect: pygame.Rect, pickup_tone: object) -> None:
-        if self.cue_shake:
+        if self._can_shake():
             self._shake_for = max(self._shake_for, 0.10)
 
         if self.cue_particles:
@@ -446,12 +502,13 @@ class Game:
     def _cue_hit(self, source_rect: pygame.Rect) -> None:
         if self.cue_flash:
             self.player.flash_for = FLASH_DURATION
-            self._damage_pulse_for = max(self._damage_pulse_for, 0.14)
+            if self._pulse_enabled():
+                self._damage_pulse_for = max(self._damage_pulse_for, 0.14)
 
         if self.cue_hitstop:
             self._hitstop_for = max(self._hitstop_for, 0.06)
 
-        if self.cue_shake:
+        if self._can_shake():
             self._shake_for = max(self._shake_for, 0.18)
 
         if self.cue_particles:
@@ -479,7 +536,7 @@ class Game:
 
     def _cue_game_over(self) -> None:
         self.state = "game_over"
-        if self.cue_shake:
+        if self._can_shake():
             self._shake_for = max(self._shake_for, 0.20)
         self.game_over_tone.play()
 
@@ -571,7 +628,7 @@ class Game:
         target = self.player.pos.x - SCREEN_W // 2
         scroll_x = max(0.0, min(float(WORLD_W - SCREEN_W), target))
         ox, oy = 0, 0
-        if self.cue_shake and self._shake_for > 0:
+        if self._can_shake() and self._shake_for > 0:
             strength = _clamp(self._shake_for / 0.18, 0.0, 1.0)
             max_px = 10 * strength
             ox = int(self.rng.uniform(-max_px, max_px))
@@ -589,7 +646,7 @@ class Game:
         coins_string = f"Coins: {self.player.score} / {self.coin_totals.get(self.current_level, 0)}  "
         dashes_string = f"Dashes: {self.dashes}  "
         hp_string = f"HP: {self.player.hp}  "
-        best_level_string = f"Best Level: {self.best_level_reached}  "
+        best_level_string = f"Best Lv: {self.best_level_reached}  "
         best_time_string = f"Best Time: {self._fmt_time(self.best_clear_time_s) if self.best_clear_time_s else '--:--'}"
 
         # Drawing HUD Element Strings
@@ -600,18 +657,9 @@ class Game:
         )
         self._draw_text((best_level_string + best_time_string), (12, 36), self.palette.subtle)
 
-        dash_timer_string = f"Dashing for: {round(self.dash_for, 1)} seconds"
-        invincible_timer_string = f"Invincible for: {round(self.player.invincible_for, 1)} seconds"
-
         self._draw_text(
-            (dash_timer_string if self.dash_for > 0 and not self.player.is_invincible else ""), 
-            (715, 36), 
-            self.palette.text
-        )
-
-        self._draw_text(
-            (invincible_timer_string if self.player.is_invincible else ""), 
-            (705, 36), 
+            ("Dashing!" if self.dash_for > 0 else ""), 
+            (12, 54), 
             self.palette.text
         )
 
@@ -690,6 +738,20 @@ class Game:
                 y = self.playfield.centery + 40,
                 color = self.palette.menu_muted,
             )
+            self._draw_centered(
+                "Press O for Settings.",
+                y = self.playfield.centery + 80,
+                color = self.palette.menu_muted,
+            )
+            btn = self._title_settings_button_rect()
+            mouse_over = btn.collidepoint(pygame.mouse.get_pos())
+            fill_col = pygame.Color(255, 255, 255, 34 if mouse_over else 20)
+            border_col = self.palette.menu_panel_border if mouse_over else self.palette.menu_muted
+            pygame.draw.rect(self.screen, fill_col, btn, border_radius = 8)
+            pygame.draw.rect(self.screen, border_col, btn, 1, border_radius = 8)
+            label = self.font.render("Settings", True, self.palette.menu_text)
+            label_rect = label.get_rect(center = btn.center)
+            self.screen.blit(label, label_rect)
 
         elif self.state == "level_cleared":
             self._draw_centered(
@@ -718,67 +780,30 @@ class Game:
             )
 
         elif self.state == "paused":
-            self._draw_centered(
-                "Paused",
-                y = self.playfield.centery - 180,
-                color = self.palette.menu_text,
-            )
-            self._draw_centered(
-                "Controls:",
-                y = self.playfield.centery - 100,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Move: Arrow keys or WASD",
-                y = self.playfield.centery - 60,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Dash: Left or Right Shift",
-                y = self.playfield.centery - 20,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Resume: P",
-                y = self.playfield.centery + 20,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Restart Level: R",
-                y = self.playfield.centery + 60,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Return to Title Screen: T",
-                y = self.playfield.centery + 100,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Credits: C",
-                y = self.playfield.centery + 140,
-                color = self.palette.menu_muted,
-            )
-            self._draw_centered(
-                "Quit: Esc",
-                y = self.playfield.centery + 180,
-                color = self.palette.menu_muted,
+            self._draw_popup_menu(
+                title = "Paused",
+                rows = [
+                    "P - Resume",
+                    "R - Restart Level",
+                    "O - Settings",
+                    "T - Return to Title",
+                    "Move: Arrow Keys or WASD   |   Dash: Left/Right Shift",
+                ],
+                footer = "Esc quits game",
             )
 
-        elif self.state == "level_reset_confirm":
-            self._draw_centered(
-                "Are you sure? You'll lose any coins collected in this level",
-                y = self.playfield.centery - 40,
-                color = self.palette.menu_text,
-            )
-            self._draw_centered(
-                "and saved dash power-ups. Your health will also be reset to 3:",
-                y = self.playfield.centery,
-                color = self.palette.menu_text,
-            )
-            self._draw_centered(
-                "Y - Yes, N - No",
-                y = self.playfield.centery + 40,
-                color = self.palette.menu_muted,
+        elif self.state == "settings":
+            rows = [
+                f"Music Volume: {int(round(float(self.settings['music_volume']) * 100))}%",
+                f"SFX Volume: {int(round(float(self.settings['sfx_volume']) * 100))}%",
+                f"Screen Shake: {'On' if self.settings['screen_shake'] else 'Off'}",
+                f"Pulse Effects: {'On' if self.settings['pulse_effects'] else 'Off'}",
+            ]
+            self._draw_popup_menu(
+                title = "Settings",
+                rows = rows,
+                footer = "Up/Down select  |  Left/Right adjust  |  Enter/Esc back",
+                selected_idx = self._settings_index,
             )
 
         elif self.state == "return_to_title_screen":
@@ -793,31 +818,13 @@ class Game:
                 color = self.palette.menu_muted,
             )
 
-        elif self.state == "credits":
-            self.screen.fill((0, 0, 0))
-            self._draw_centered(
-                "Credits:",
-                y = self.playfield.centery - 280,
-                color = self.palette.menu_text,
-            )
-            self._draw_text(
-                "Add attributions for external assets here.",
-                (12, 86),
-                color = self.palette.menu_text,
-            )
-            self._draw_text(
-                "Press C to return to pause menu.",
-                (12, 106),
-                color = self.palette.menu_text,
-            )
-
         # Small pulse feedback for damage / level clear.
-        if self._damage_pulse_for > 0:
+        if self._pulse_enabled() and self._damage_pulse_for > 0:
             a = int(75 * _clamp(self._damage_pulse_for / 0.14, 0.0, 1.0))
             overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
             overlay.fill((200, 30, 30, a))
             self.screen.blit(overlay, (0, 0))
-        if self._clear_pulse_for > 0:
+        if self._pulse_enabled() and self._clear_pulse_for > 0:
             a = int(65 * _clamp(self._clear_pulse_for / 0.20, 0.0, 1.0))
             overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
             overlay.fill((240, 215, 120, a))
@@ -842,6 +849,48 @@ class Game:
         pygame.draw.rect(self.screen, self.palette.menu_panel_border, bg_rect, 1, border_radius = 6)
         self.screen.blit(shadow, r_shadow)
         self.screen.blit(s, r)
+
+    def _draw_popup_menu(
+        self,
+        *,
+        title: str,
+        rows: list[str],
+        footer: str,
+        selected_idx: int | None = None,
+    ) -> None:
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        overlay.fill((10, 10, 16, 150))
+        self.screen.blit(overlay, (0, 0))
+
+        panel_w = 660
+        panel_h = 120 + len(rows) * 42 + 62
+        panel = pygame.Rect(0, 0, panel_w, panel_h)
+        panel.center = (SCREEN_W // 2, self.playfield.centery + 10)
+        pygame.draw.rect(self.screen, self.palette.menu_panel, panel, border_radius = 12)
+        pygame.draw.rect(self.screen, self.palette.menu_panel_border, panel, 2, border_radius = 12)
+
+        title_s = self.big_font.render(title, True, self.palette.menu_text)
+        title_r = title_s.get_rect(center = (panel.centerx, panel.top + 34))
+        self.screen.blit(title_s, title_r)
+
+        y = panel.top + 70
+        for i, row in enumerate(rows):
+            row_rect = pygame.Rect(panel.left + 34, y - 2, panel.width - 68, 34)
+            is_selected = selected_idx is not None and i == selected_idx
+            if is_selected:
+                pygame.draw.rect(self.screen, pygame.Color(255, 255, 255, 26), row_rect, border_radius = 6)
+                pygame.draw.rect(self.screen, self.palette.menu_panel_border, row_rect, 1, border_radius = 6)
+
+            row_color = self.palette.menu_text if is_selected else self.palette.menu_muted
+            self._draw_text(row, (row_rect.left + 10, y + 3), row_color)
+            y += 42
+
+        footer_s = self.font.render(footer, True, self.palette.menu_muted)
+        footer_r = footer_s.get_rect(midbottom = (panel.centerx, panel.bottom - 14))
+        self.screen.blit(footer_s, footer_r)
+
+    def _title_settings_button_rect(self) -> pygame.Rect:
+        return pygame.Rect((SCREEN_W // 2) - 120, self.playfield.centery + 108, 240, 42)
 
     def _fmt_time(self, seconds: float) -> str:
         total = max(0, int(round(seconds)))
