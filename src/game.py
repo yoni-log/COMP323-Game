@@ -49,7 +49,11 @@ class Game:
         self.cue_shake = True
         self.cue_hitstop = True
         self.cue_particles = True
+        
+        self.audio = AudioBank()
+
         self.settings = get_settings()
+        self._apply_audio_settings()
         self._settings_index = 0
         self._settings_return_state = "paused"
 
@@ -77,7 +81,7 @@ class Game:
         self._clear_pulse_for = 0.0
 
         self.level_data = []
-        self.current_level = 1   # Change this value to test any level without having to start from Level 1
+        self.current_level = 3   # Change this value to test any level without having to start from Level 1
         self.run_elapsed_s = 0.0
         self.best_level_reached = get_best_level_reached()
         self.best_clear_time_s = get_best_clear_time_s()
@@ -236,19 +240,9 @@ class Game:
         return bool(self.settings.get("pulse_effects", True))
 
     def _apply_audio_settings(self) -> None:
-        sfx = float(self.settings.get("sfx_volume", 0.65))
-        for tone in (
-            self.coin_pickup_tone,
-            self.dash_power_up_pickup_tone,
-            self.heart_pickup_tone,
-            self.player_hit_tone,
-            self.level_cleared_tone,
-            self.level_cleared_tone_2,
-            self.game_over_tone,
-        ):
-            tone.set_volume(sfx)
-        if pygame.mixer.get_init() is not None:
-            pygame.mixer.music.set_volume(float(self.settings.get("music_volume", 0.35)))
+        self.audio.sfx_volume = float(self.settings.get("sfx_volume", 0.65))
+        self.audio.music_volume = float(self.settings.get("music_volume", 0.35))
+        self.audio._apply_volumes()
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -317,9 +311,22 @@ class Game:
             self._settings_index = 0
             return
         if self.state == "paused" and event.key == pygame.K_r:
-            self._reset_level(keep_state = True)
-            self.state = "play"
-            return
+            self.state = "level_reset_confirm"
+        
+        if self.state == "level_reset_confirm":
+            if event.key == pygame.K_y:
+                self.dashes = 0
+                self._reset_level(keep_state = True)
+                self.state = "play"
+                return
+            elif event.key == pygame.K_n:
+                self.state = "paused"
+        
+        if event.key == pygame.K_c:
+            if self.state == "paused":
+                self.state = "credits"
+            elif self.state == "credits":
+                self.state = "paused"
 
         if self.state == "settings":
             labels = ("music_volume", "sfx_volume", "screen_shake", "pulse_effects")
@@ -805,6 +812,7 @@ class Game:
                     "P - Resume",
                     "R - Restart Level",
                     "O - Settings",
+                    "C - Credits",
                     "T - Return to Title",
                     "Move: Arrow Keys or WASD   |   Dash: Left/Right Shift",
                 ],
@@ -828,6 +836,18 @@ class Game:
         elif self.state == "return_to_title_screen":
             self._draw_centered(
                 "Are you sure? All current progress will be lost:",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "Y - Yes, N - No",
+                y = self.playfield.centery + 40,
+                color = self.palette.menu_muted,
+            )
+
+        elif self.state == "level_reset_confirm":
+            self._draw_centered(
+                "Are you sure? You'll lose currently saved dash power-ups:",
                 y = self.playfield.centery,
                 color = self.palette.menu_text,
             )
