@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import array
-
 import pygame
-
 
 class SilentTone:
     """Used when pygame.mixer cannot start (common after display/audio device changes on macOS)."""
@@ -13,7 +11,6 @@ class SilentTone:
 
     def set_volume(self, volume: float) -> None:
         return None
-
 
 # Only square wave tones are supported
 class Tone(pygame.mixer.Sound):
@@ -39,7 +36,6 @@ class Tone(pygame.mixer.Sound):
         pygame.mixer.Sound.__init__(self, buffer=samples)
         self.set_volume(volume)
 
-
 def init_mixer_safe() -> bool:
     """Initialize the mixer if possible; return whether audio is available."""
     if pygame.mixer.get_init() is not None:
@@ -49,7 +45,6 @@ def init_mixer_safe() -> bool:
     except pygame.error:
         return False
     return pygame.mixer.get_init() is not None
-
 
 def make_tone(frequency: int, duration: float, volume: float) -> Tone | SilentTone:
     """Build a square-wave tone, or a silent stand-in if the mixer is unavailable."""

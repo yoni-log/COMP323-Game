@@ -11,9 +11,9 @@ except ModuleNotFoundError:
     print("  python3 main.py", file=sys.stderr)
     sys.exit(1)
 
-from anim_feedback.game import Game
-from anim_feedback.game_config import FPS
-from anim_feedback.pregame import run_pregame_sequence
+from src.game import Game
+from src.game_config import FPS
+from src.pregame import run_pregame_sequence
 
 
 def main() -> None:

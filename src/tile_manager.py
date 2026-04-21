@@ -14,7 +14,6 @@ class FloorTile:
     def is_deadly(self) -> bool:
         return self.fade >= DEADLY_AT
 
-
 class TileManager:
     def __init__(
         self,
@@ -74,7 +73,6 @@ class TileManager:
             if tile.is_deadly and (int(self._elapsed * 8) % 2 == 0):
                 pygame.draw.line(surface, pygame.Color("#ffd9d9"), screen_rect.topleft, screen_rect.bottomright, 1)
                 pygame.draw.line(surface, pygame.Color("#ffd9d9"), screen_rect.topright, screen_rect.bottomleft, 1)
-
 
 def _clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
