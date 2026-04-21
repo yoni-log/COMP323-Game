@@ -41,7 +41,7 @@ class Game:
         )
 
         self.debug = False
-        self.state = "title"  # title | play | level_cleared | paused | return_to_title_screen | won | game_over
+        self.state = "title"  # title | play | level_cleared | paused | level_reset_confirm | return_to_title_screen | won | game_over
 
         self.cue_flash = True
         self.cue_shake = True
@@ -267,10 +267,21 @@ class Game:
         # Handle "paused" state input for returning to the title screen
         if self.state == "paused" and event.key == pygame.K_t: 
             self.state = "return_to_title_screen"
+        
+        # Handle "paused" state input for reseting the level
         if self.state == "paused" and event.key == pygame.K_r:
-            self._reset_level(keep_state = True)
-            self.state = "play"
-            return
+            self.state = "level_reset_confirm"
+
+        # Handle "level_reset_confirm" state input
+        if self.state == "level_reset_confirm":
+            if event.key == pygame.K_y:
+                self._reset_level(keep_state = True)
+                self.dashes = 0     # Prevents an exploit in which the player can farm dash power-ups by repeatedly resetting the level
+                self.state = "play"
+                return
+            elif event.key == pygame.K_n:
+                self.state = "paused"
+                return
 
         # Handle "return_to_title_screen" state input
         if self.state == "return_to_title_screen": 
@@ -702,28 +713,55 @@ class Game:
 
         elif self.state == "paused":
             self._draw_centered(
-                "Paused — Press P to resume or T to return to title screen.",
-                y = self.playfield.centery - 60,
+                "Paused",
+                y = self.playfield.centery - 140,
                 color = self.palette.menu_text,
             )
             self._draw_centered(
                 "Controls:",
-                y = self.playfield.centery - 20,
+                y = self.playfield.centery - 100,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
                 "Move: Arrow keys or WASD",
-                y = self.playfield.centery + 20,
+                y = self.playfield.centery - 60,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
                 "Dash: Left or Right Shift",
-                y = self.playfield.centery + 60,
+                y = self.playfield.centery - 20,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Resume: P",
+                y = self.playfield.centery + 20,
                 color = self.palette.menu_muted,
             )
             self._draw_centered(
                 "Restart Level: R",
+                y = self.playfield.centery + 60,
+                color = self.palette.menu_muted,
+            )
+            self._draw_centered(
+                "Return to title screen: T",
                 y = self.playfield.centery + 100,
+                color = self.palette.menu_muted,
+            )
+
+        elif self.state == "level_reset_confirm":
+            self._draw_centered(
+                "Are you sure? You'll lose any coins collected in this level",
+                y = self.playfield.centery - 40,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "and saved dash power-ups. Your health will also be reset to 3:",
+                y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                "Y - Yes, N - No",
+                y = self.playfield.centery + 40,
                 color = self.palette.menu_muted,
             )
 
