@@ -771,13 +771,26 @@ class Game:
             )
             btn = self._title_settings_button_rect()
             mouse_over = btn.collidepoint(pygame.mouse.get_pos())
-            fill_col = pygame.Color(255, 255, 255, 34 if mouse_over else 20)
-            border_col = self.palette.menu_panel_border if mouse_over else self.palette.menu_muted
-            pygame.draw.rect(self.screen, fill_col, btn, border_radius = 8)
-            pygame.draw.rect(self.screen, border_col, btn, 1, border_radius = 8)
-            label = self.font.render("Settings", True, self.palette.menu_text)
-            label_rect = label.get_rect(center = btn.center)
-            self.screen.blit(label, label_rect)
+            gear_col = self.palette.menu_text if mouse_over else self.palette.menu_muted
+            ring_col = self.palette.menu_panel_border if mouse_over else pygame.Color(255, 255, 255, 45)
+            fill_col = pygame.Color(255, 255, 255, 40 if mouse_over else 24)
+            pygame.draw.circle(self.screen, fill_col, btn.center, btn.width // 2)
+            pygame.draw.circle(self.screen, ring_col, btn.center, btn.width // 2, 2)
+
+            cx, cy = btn.center
+            outer_r = 11
+            inner_r = 6
+            for i in range(8):
+                angle = i * 45
+                v = pygame.Vector2(0, -1).rotate(angle)
+                p1 = (cx + int(v.x * inner_r), cy + int(v.y * inner_r))
+                p2 = (cx + int(v.x * outer_r), cy + int(v.y * outer_r))
+                pygame.draw.line(self.screen, gear_col, p1, p2, 2)
+            pygame.draw.circle(self.screen, gear_col, btn.center, 5, 2)
+
+            hint = self.font.render("Settings", True, self.palette.menu_muted)
+            hint_rect = hint.get_rect(midright = (btn.left - 8, btn.centery + 1))
+            self.screen.blit(hint, hint_rect)
 
         elif self.state == "level_cleared":
             self._draw_centered(
@@ -965,10 +978,10 @@ class Game:
             row_rect = pygame.Rect(panel.left + 34, y - 2, panel.width - 68, 34)
             is_selected = selected_idx is not None and i == selected_idx
             if is_selected:
-                pygame.draw.rect(self.screen, pygame.Color(255, 255, 255, 26), row_rect, border_radius = 6)
+                pygame.draw.rect(self.screen, pygame.Color(255, 220, 100, 34), row_rect, border_radius = 6)
                 pygame.draw.rect(self.screen, self.palette.menu_panel_border, row_rect, 1, border_radius = 6)
 
-            row_color = self.palette.menu_text if is_selected else self.palette.menu_muted
+            row_color = self.palette.menu_shadow if is_selected else self.palette.menu_muted
             self._draw_text(row, (row_rect.left + 10, y + 3), row_color)
             y += 42
 
@@ -977,7 +990,9 @@ class Game:
         self.screen.blit(footer_s, footer_r)
 
     def _title_settings_button_rect(self) -> pygame.Rect:
-        return pygame.Rect((SCREEN_W // 2) - 120, self.playfield.centery + 108, 240, 42)
+        size = 34
+        margin = 14
+        return pygame.Rect(SCREEN_W - size - margin, HUD_H + margin, size, size)
 
     def _fmt_time(self, seconds: float) -> str:
         total = max(0, int(round(seconds)))

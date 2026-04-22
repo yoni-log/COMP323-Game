@@ -1,15 +1,15 @@
 {
   "selected_character": {
-    "family": "yellow",
-    "shape": "squircle",
-    "face": "face_e.png"
+    "family": "green",
+    "shape": "square",
+    "face": "face_j.png"
   },
-  "best_level_reached": 1,
+  "best_level_reached": 5,
   "best_clear_time_s": null,
   "settings": {
-    "music_volume": 0.35,
-    "sfx_volume": 0.65,
-    "screen_shake": true,
-    "pulse_effects": true
+    "music_volume": 0.39999999999999997,
+    "sfx_volume": 0.8500000000000002,
+    "screen_shake": false,
+    "pulse_effects": false
   }
 }

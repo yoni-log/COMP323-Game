@@ -2,6 +2,7 @@ import math
 import pygame
 import random
 import sys
+from .persistence import get_settings, save_settings
 
 # --- Constants ---
 WIDTH, HEIGHT = 900, 600
@@ -17,11 +18,12 @@ TILE_COLORS = [
     (140, 70, 25),
 ]
 CRACK_COLOR = (80, 40, 10)
-TITLE_COLOR = (255, 220, 100)
+GAME_YELLOW = (255, 220, 100)  # Matches in-game safe tile yellow.
+TITLE_COLOR = GAME_YELLOW
 TITLE_SHADOW = (120, 60, 10)
 PROMPT_COLOR = (255, 255, 255)
 DIM_COLOR = (180, 180, 180)
-HIGHLIGHT = (255, 200, 60)
+HIGHLIGHT = GAME_YELLOW
 
 # Lazily created when run_start_screen() runs (never at import time — avoids SDL/macOS crashes)
 _screen: pygame.Surface | None = None
@@ -161,13 +163,13 @@ def draw_controls(surface):
     panel_y = 340
     panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
     pygame.draw.rect(panel_surf, (0, 0, 0, 120), (0, 0, panel_w, panel_h), border_radius=8)
-    pygame.draw.rect(panel_surf, (180, 120, 40, 160), (0, 0, panel_w, panel_h), 2, border_radius=8)
+    pygame.draw.rect(panel_surf, (*GAME_YELLOW, 180), (0, 0, panel_w, panel_h), 2, border_radius=8)
     surface.blit(panel_surf, (panel_x, panel_y))
     header = font_ctrl.render("C O N T R O L S", True, HIGHLIGHT)
     surface.blit(header, (panel_x + panel_w // 2 - header.get_width() // 2, panel_y + 10))
     pygame.draw.line(
         surface,
-        (180, 120, 40),
+        GAME_YELLOW,
         (panel_x + 20, panel_y + 32),
         (panel_x + panel_w - 20, panel_y + 32),
         1,
@@ -179,6 +181,7 @@ def draw_controls(surface):
         surface.blit(action_surf, (panel_x + 24, y))
         surface.blit(keys_surf, (panel_x + panel_w - keys_surf.get_width() - 24, y))
 
+
 # --- Main loop ---
 def run_start_screen() -> None:
     _ensure_start_screen_ready()
@@ -186,6 +189,10 @@ def run_start_screen() -> None:
 
     tiles = [FallingTile() for _ in range(22)]
     tick = 0
+    settings = get_settings()
+    show_settings = False
+    settings_index = 0
+    setting_keys = ("music_volume", "sfx_volume", "screen_shake", "pulse_effects")
     while True:
         _clock.tick(FPS)
         tick += 1
@@ -193,9 +200,40 @@ def run_start_screen() -> None:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if settings_button_rect().collidepoint(event.pos):
+                    show_settings = not show_settings
+                    if show_settings:
+                        settings_index = 0
+                    continue
             if event.type == pygame.KEYDOWN:
+                if show_settings:
+                    if event.key == pygame.K_UP:
+                        settings_index = (settings_index - 1) % len(setting_keys)
+                        continue
+                    if event.key == pygame.K_DOWN:
+                        settings_index = (settings_index + 1) % len(setting_keys)
+                        continue
+                    if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                        key = setting_keys[settings_index]
+                        step = 0.05 if event.key == pygame.K_RIGHT else -0.05
+                        if key in {"music_volume", "sfx_volume"}:
+                            settings[key] = max(0.0, min(1.0, float(settings[key]) + step))
+                        else:
+                            settings[key] = not bool(settings[key])
+                        save_settings(settings)
+                        continue
+                    if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_ESCAPE, pygame.K_o):
+                        save_settings(settings)
+                        show_settings = False
+                        continue
                 if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     return
+                if event.key == pygame.K_o:
+                    show_settings = not show_settings
+                    if show_settings:
+                        settings_index = 0
+                    continue
                 if event.key == pygame.K_ESCAPE:
                     pygame.event.post(pygame.event.Event(pygame.QUIT))
         draw_gradient(_screen)
@@ -206,4 +244,7 @@ def run_start_screen() -> None:
         draw_title(_screen, tick)
         draw_prompt(_screen, tick)
         draw_controls(_screen)
+        draw_settings_button(_screen)
+        if show_settings:
+            draw_settings_popup(_screen, settings, settings_index)
         pygame.display.flip()
