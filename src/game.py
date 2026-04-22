@@ -684,8 +684,14 @@ class Game:
         self._draw_text((best_level_string + best_time_string), (12, 36), self.palette.subtle)
 
         self._draw_text(
-            ("Dashing!" if self.dash_for > 0 else ""), 
-            (12, 54), 
+            (f"Dashing for {round(self.dash_for, 1)}" if self.dash_for > 0 and not self.player.is_invincible else ""), 
+            (783, 36), 
+            self.palette.text
+        )
+
+        self._draw_text(
+            (f"Invincible for {round(self.player.invincible_for, 1)}" if self.player.invincible_for > 0 else ""), 
+            (773, 36), 
             self.palette.text
         )
 
