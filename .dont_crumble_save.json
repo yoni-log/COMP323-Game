@@ -1,7 +1,7 @@
 {
   "selected_character": {
-    "family": "green",
-    "shape": "square",
+    "family": "yellow",
+    "shape": "squircle",
     "face": "face_j.png"
   },
   "best_level_reached": 5,

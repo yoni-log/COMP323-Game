@@ -182,6 +182,74 @@ def draw_controls(surface):
         surface.blit(keys_surf, (panel_x + panel_w - keys_surf.get_width() - 24, y))
 
 
+def settings_button_rect() -> pygame.Rect:
+    size = 36
+    margin = 14
+    return pygame.Rect(WIDTH - size - margin, margin, size, size)
+
+
+def draw_settings_button(surface: pygame.Surface) -> None:
+    btn = settings_button_rect()
+    mouse_over = btn.collidepoint(pygame.mouse.get_pos())
+    gear_col = PROMPT_COLOR if mouse_over else DIM_COLOR
+    ring_col = HIGHLIGHT if mouse_over else (*GAME_YELLOW, 100)
+    fill_col = (255, 255, 255, 50) if mouse_over else (255, 255, 255, 32)
+    pygame.draw.circle(surface, fill_col, btn.center, btn.width // 2)
+    pygame.draw.circle(surface, ring_col, btn.center, btn.width // 2, 2)
+
+    cx, cy = btn.center
+    outer_r = 12
+    inner_r = 6
+    for i in range(8):
+        angle = i * 45
+        v = pygame.Vector2(0, -1).rotate(angle)
+        p1 = (cx + int(v.x * inner_r), cy + int(v.y * inner_r))
+        p2 = (cx + int(v.x * outer_r), cy + int(v.y * outer_r))
+        pygame.draw.line(surface, gear_col, p1, p2, 2)
+    pygame.draw.circle(surface, gear_col, btn.center, 5, 2)
+
+
+def draw_settings_popup(surface: pygame.Surface, settings: dict, selected_idx: int) -> None:
+    assert font_sub is not None and font_ctrl is not None
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill((8, 8, 16, 165))
+    surface.blit(overlay, (0, 0))
+
+    rows = [
+        f"Music Volume: {int(round(float(settings['music_volume']) * 100))}%",
+        f"SFX Volume: {int(round(float(settings['sfx_volume']) * 100))}%",
+        f"Screen Shake: {'On' if settings['screen_shake'] else 'Off'}",
+        f"Pulse Effects: {'On' if settings['pulse_effects'] else 'Off'}",
+    ]
+    panel = pygame.Rect(0, 0, 560, 330)
+    panel.center = (WIDTH // 2, HEIGHT // 2 + 10)
+    panel_surf = pygame.Surface((panel.width, panel.height), pygame.SRCALPHA)
+    pygame.draw.rect(panel_surf, (0, 0, 0, 165), (0, 0, panel.width, panel.height), border_radius=12)
+    pygame.draw.rect(panel_surf, (*GAME_YELLOW, 220), (0, 0, panel.width, panel.height), 2, border_radius=12)
+    surface.blit(panel_surf, panel.topleft)
+
+    title = font_sub.render("SETTINGS", True, HIGHLIGHT)
+    surface.blit(title, title.get_rect(center=(panel.centerx, panel.top + 34)))
+    pygame.draw.line(surface, GAME_YELLOW, (panel.left + 28, panel.top + 58), (panel.right - 28, panel.top + 58), 1)
+
+    y = panel.top + 86
+    for i, row in enumerate(rows):
+        row_rect = pygame.Rect(panel.left + 26, y - 3, panel.width - 52, 38)
+        selected = i == selected_idx
+        if selected:
+            pygame.draw.rect(surface, (255, 220, 100, 34), row_rect, border_radius=6)
+            pygame.draw.rect(surface, GAME_YELLOW, row_rect, 1, border_radius=6)
+        col = (45, 34, 24) if selected else DIM_COLOR
+        text = font_ctrl.render(row, True, col)
+        surface.blit(text, (row_rect.left + 12, y + 7))
+        y += 50
+
+    footer_1 = font_ctrl.render("Up/Down select  |  Left/Right adjust", True, DIM_COLOR)
+    footer_2 = font_ctrl.render("Enter / Esc / O: Back", True, DIM_COLOR)
+    surface.blit(footer_1, footer_1.get_rect(center=(panel.centerx, panel.bottom - 38)))
+    surface.blit(footer_2, footer_2.get_rect(center=(panel.centerx, panel.bottom - 18)))
+
+
 # --- Main loop ---
 def run_start_screen() -> None:
     _ensure_start_screen_ready()
