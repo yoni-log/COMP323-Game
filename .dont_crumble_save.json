@@ -5,5 +5,11 @@
     "face": "face_e.png"
   },
   "best_level_reached": 1,
-  "best_clear_time_s": null
+  "best_clear_time_s": null,
+  "settings": {
+    "music_volume": 0.35,
+    "sfx_volume": 0.65,
+    "screen_shake": true,
+    "pulse_effects": true
+  }
 }
