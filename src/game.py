@@ -81,7 +81,7 @@ class Game:
         self._clear_pulse_for = 0.0
 
         self.level_data = []
-        self.current_level = 10   # Start at Level 1
+        self.current_level = 1   # Start at Level 1
         self.run_elapsed_s = 0.0
         self.best_level_reached = get_best_level_reached()
         self.best_clear_time_s = get_best_clear_time_s()
