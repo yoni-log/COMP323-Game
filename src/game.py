@@ -266,12 +266,6 @@ class Game:
             pygame.event.post(pygame.event.Event(pygame.QUIT))
             return
 
-        if event.key == pygame.K_5:
-            self.audio.toggle_music_mute()
-
-        if event.key == pygame.K_6:
-            self.audio.toggle_sfx_mute()
-
         # Handle debug toggles with the F1 key and 1-4 keys
         if event.key == pygame.K_F1:
             self.debug = not self.debug

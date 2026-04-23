@@ -1,10 +1,10 @@
 {
   "selected_character": {
-    "family": "yellow",
+    "family": "blue",
     "shape": "squircle",
-    "face": "face_j.png"
+    "face": "face_h.png"
   },
-  "best_level_reached": 5,
+  "best_level_reached": 1,
   "best_clear_time_s": null,
   "settings": {
     "music_volume": 0.39999999999999997,

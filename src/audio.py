@@ -9,9 +9,7 @@ snd_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "so
 class AudioBank:
     def __init__(self) -> None:
         self.enabled = False
-        self.music_muted = False
-        self.sfx_muted = False
-
+        
         self.music_volume = 0.16
         self.sfx_volume = 0.32
 
@@ -68,37 +66,24 @@ class AudioBank:
             return
 
         if self._loop_channel is not None:
-            self._loop_channel.set_volume(0.0 if self.music_muted else self.music_volume)
+            self._loop_channel.set_volume(self.music_volume)
 
-        if self._current_music == "gameplay_loop":
-            volume = 0.0 if self.music_muted else self.music_volume * 0.5
-        elif self._current_music == "level_cleared_won_loop":
-            volume = 0.0 if self.music_muted else self.music_volume * 0.5
+        if self._current_music in ["gameplay_loop", "level_cleared_won_loop"]:
+            volume = self.music_volume * 0.5
         else:
-            volume = 0.0 if self.music_muted else self.music_volume
+            volume = self.music_volume
         pygame.mixer.music.set_volume(volume)
 
         for name, sound in self._sounds.items():
             if name.endswith("_loop"):
-                volume = 0.0 if self.music_muted else self.music_volume
+                volume = self.music_volume
             else:
-                volume = 0.0 if self.sfx_muted else self.sfx_volume
+                volume = self.sfx_volume
             
             sound.set_volume(volume)
 
-    def toggle_music_mute(self) -> None:
-        self.music_muted = not self.music_muted
-        self._apply_volumes()
-
-    def toggle_sfx_mute(self) -> None:
-        self.sfx_muted = not self.sfx_muted
-        self._apply_volumes()
-
     def play(self, name: str) -> None:
         if not self.enabled:
-            return
-
-        if self.sfx_muted:
             return
 
         sound = self._sounds.get(name)
@@ -107,9 +92,6 @@ class AudioBank:
 
     def play_loop(self, name: str) -> None:
         if not self.enabled or self._loop_channel is None:
-            return
-
-        if self.music_muted:
             return
 
         sound = self._sounds.get(name)
@@ -134,12 +116,10 @@ class AudioBank:
         pygame.mixer.music.stop()
         try:
             pygame.mixer.music.load(path)
-            if track_key == "gameplay_loop":
-                volume = 0.0 if self.music_muted else self.music_volume * 0.5
-            elif track_key == "level_cleared_won_loop":
-                volume = 0.0 if self.music_muted else self.music_volume * 0.5
+            if track_key in ["gameplay_loop", "level_cleared_won_loop"]:
+                volume = self.music_volume * 0.5
             else:
-                volume = 0.0 if self.music_muted else self.music_volume
+                volume = self.music_volume
             pygame.mixer.music.set_volume(volume)
             pygame.mixer.music.play(-1)
             self._current_music = track_key
