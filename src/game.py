@@ -397,7 +397,7 @@ class Game:
                 self._reset_level(keep_state = True)
                 self.run_elapsed_s = 0.0
 
-        if self.dashes > 0 and self.state == "play" and (event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT):
+        if self.dashes > 0 and self.state == "play" and (event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT) and self.dash_for <= 0:
             self._dash_power_up_use(self.player.rect, dt = 0.0)
 
     def _advance_to_next_level(self) -> None:
