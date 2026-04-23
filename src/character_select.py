@@ -17,6 +17,8 @@ from .kenney_character import (
 )
 from .kenney_shape_atlas import KenneyShapeAtlas
 
+from .start_screen import run_start_screen
+
 
 def _preview_surface(atlas: KenneyShapeAtlas | None, choice: KenneyCharacterChoice) -> pygame.Surface:
     if atlas is None:
@@ -36,7 +38,7 @@ def run_character_select() -> KenneyCharacterChoice:
     Blocks until the player confirms with Enter.
     On window close or Escape, exits the process (same as the splash screen).
     """
-    pygame.display.set_caption("Don't Crumble — Choose your character")
+    pygame.display.set_caption("Don't Crumble")
 
     # Fresh display surface avoids stale driver state after the splash screen loop.
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
@@ -95,6 +97,8 @@ def run_character_select() -> KenneyCharacterChoice:
             if event.key in (pygame.K_ESCAPE,):
                 pygame.quit()
                 sys.exit(0)
+            if event.key == pygame.K_t:
+                run_start_screen()
             if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 pygame.event.clear()
                 return choice_from_indices()
@@ -175,12 +179,12 @@ def run_character_select() -> KenneyCharacterChoice:
         )
         screen.blit(code_line, code_line.get_rect(center = (right_panel.centerx, right_panel.top + 246)))
 
-        quick_hint = tiny_font.render("Q/E or [ ] cycles face quickly", True, muted)
+        quick_hint = tiny_font.render("Q/E or [ ] to cycle face quickly", True, muted)
         screen.blit(quick_hint, quick_hint.get_rect(center = (right_panel.centerx, right_panel.top + 276)))
 
         hints = [
-            "Up/Down: choose field   Left/Right: change value",
-            "Enter: start game   Esc: quit",
+            "Up/Down: Choose Field   Left/Right: Change Value",
+            "Enter: Start Game   T: Return to Title   Esc: Quit",
         ]
         y0 = SCREEN_H - 72
         for i, line in enumerate(hints):

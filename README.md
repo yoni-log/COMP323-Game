@@ -4,8 +4,8 @@ A reflex-driven survival platformer where the floor is always collapsing beneath
 How to Run
 
 1. From this directory, install dependencies:
-
 pip install -r requirements.txt
+
 2.  Run the game:
 python main.py 
 

@@ -17,7 +17,7 @@ def run_pregame_sequence() -> None:
     
     # Restore last-used character before showing selector.
     set_selected_character(get_saved_character())
-    run_start_screen()
+    run_start_screen(audio)
     choice = run_character_select()
     set_selected_character(choice)
     save_selected_character(choice)

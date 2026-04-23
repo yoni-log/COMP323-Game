@@ -3,6 +3,7 @@ import pygame
 import random
 import sys
 from .persistence import get_settings, save_settings
+from .audio import AudioBank
 
 # --- Constants ---
 WIDTH, HEIGHT = 900, 600
@@ -143,24 +144,25 @@ def draw_prompt(surface, tick):
     assert font_prompt is not None
     if (tick // 35) % 2 == 0:
         prompt = font_prompt.render("PRESS  ENTER  TO  START", True, PROMPT_COLOR)
-        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 290))
+        surface.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, 285))
 
 # --- Controls panel ---
 CONTROLS = [
     ("MOVE", "WASD or Arrow Keys"), 
     ("DASH", "SHIFT"), 
-    ("PAUSE", "P"), 
+    ("PAUSE/RESUME", "P"), 
     ("RESTART LEVEL", "R"), 
-    ("RETURN TO TITLE", "T"), 
+    ("SETTINGS", "O"), 
     ("CREDITS", "C"), 
+    ("RETURN TO TITLE", "T"), 
     ("QUIT", "ESC")
 ]
 
 def draw_controls(surface):
     assert font_ctrl is not None
-    panel_w, panel_h = 360, 210
+    panel_w, panel_h = 360, 230
     panel_x = WIDTH // 2 - panel_w // 2
-    panel_y = 340
+    panel_y = 330
     panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
     pygame.draw.rect(panel_surf, (0, 0, 0, 120), (0, 0, panel_w, panel_h), border_radius=8)
     pygame.draw.rect(panel_surf, (*GAME_YELLOW, 180), (0, 0, panel_w, panel_h), 2, border_radius=8)
@@ -251,7 +253,7 @@ def draw_settings_popup(surface: pygame.Surface, settings: dict, selected_idx: i
 
 
 # --- Main loop ---
-def run_start_screen() -> None:
+def run_start_screen(audio: AudioBank | None = None) -> None:
     _ensure_start_screen_ready()
     assert _screen is not None and _clock is not None
 
@@ -287,6 +289,13 @@ def run_start_screen() -> None:
                         step = 0.05 if event.key == pygame.K_RIGHT else -0.05
                         if key in {"music_volume", "sfx_volume"}:
                             settings[key] = max(0.0, min(1.0, float(settings[key]) + step))
+                            # Apply volume change immediately to audio
+                            if audio is not None:
+                                if key == "music_volume":
+                                    audio.music_volume = float(settings[key])
+                                else:
+                                    audio.sfx_volume = float(settings[key])
+                                audio._apply_volumes()
                         else:
                             settings[key] = not bool(settings[key])
                         save_settings(settings)

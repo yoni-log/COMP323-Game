@@ -71,7 +71,7 @@ class AudioBank:
             self._loop_channel.set_volume(0.0 if self.music_muted else self.music_volume)
 
         if self._current_music == "gameplay_loop":
-            volume = 0.0 if self.music_muted else self.music_volume * 0.25
+            volume = 0.0 if self.music_muted else self.music_volume * 0.5
         elif self._current_music == "level_cleared_won_loop":
             volume = 0.0 if self.music_muted else self.music_volume * 0.5
         else:
@@ -135,7 +135,7 @@ class AudioBank:
         try:
             pygame.mixer.music.load(path)
             if track_key == "gameplay_loop":
-                volume = 0.0 if self.music_muted else self.music_volume * 0.25
+                volume = 0.0 if self.music_muted else self.music_volume * 0.5
             elif track_key == "level_cleared_won_loop":
                 volume = 0.0 if self.music_muted else self.music_volume * 0.5
             else:

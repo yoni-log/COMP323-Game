@@ -4,7 +4,7 @@
 ## Parameters (Current Values)
 ------------------------------
 player speed       — 320.0 px/s
-invincibility time — 0.85 s  (after taking a hit)
+invincibility time — 3.0 s  (after taking a hit)
 knockback force    — 540.0 px/s
 hitstop duration   — 0.06 s
 screen shake time  — 0.18 s  (hit), 0.10 s (coin), 0.20 s (game over)
