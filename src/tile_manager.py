@@ -55,7 +55,7 @@ class TileManager:
         sw = surface.get_width()
         for tile in self.tiles:
             screen_rect = tile.rect.move(cam)
-            # skip tiles fully outside the viewport
+            # skip tiles fully outside the viewpoint
             if screen_rect.right < 0 or screen_rect.left > sw:
                 continue
             f = tile.fade

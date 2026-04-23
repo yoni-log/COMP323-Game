@@ -1,5 +1,5 @@
 # Status: Complete
-# 20 coins, 2 dashes, 26 hazards, 2 hearts
+# 20 coins, 2 dashes, 25 hazards, 2 hearts
 # Far right boundary of the level is at the hashtag (col 149-150)
 
 LEVEL = [
