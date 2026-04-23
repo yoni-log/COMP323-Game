@@ -8,13 +8,13 @@ for i in range(2, 11):
 print()
 print()
 
-print("_tile_fade_mult")   # controls how quickly the tiles disappear
+print("_tile_fade_mult")     # controls how quickly the tiles disappear
 for i in range(2, 11):
     print(f'Level {i}: {round((1.0 + (0.1 * i)), 1)}')
 
 print()
 print()
 
-print("_tile_wave_mult")   # controls when tiles start disappearing
+print("_tile_wave_mult")     # controls when tiles start disappearing
 for i in range(2, 11):
     print(f'Level {i}: {round((1.0 + (0.1 * i)), 1)}')
