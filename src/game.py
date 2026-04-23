@@ -81,13 +81,15 @@ class Game:
         self._clear_pulse_for = 0.0
 
         self.level_data = []
-        self.current_level = 1   # Start at Level 1
+        self.current_level = 10   # Start at Level 1
         self.run_elapsed_s = 0.0
         self.best_level_reached = get_best_level_reached()
         self.best_clear_time_s = get_best_clear_time_s()
 
         self.dashes = 0
         self.dash_for = 0.0
+
+        self.level_resets = 0
 
         self._reset_level(keep_state = True)
 
@@ -315,6 +317,7 @@ class Game:
         
         if self.state == "level_reset_confirm":
             if event.key == pygame.K_y:
+                self.level_resets += 1   # Count the number of times the player resets the level to display when/if they win
                 self.dashes = 0
                 self._reset_level(keep_state = True)
                 self.state = "play"
@@ -356,6 +359,7 @@ class Game:
             if event.key == pygame.K_y:
                 self.current_level = 1
                 self.dashes = 0
+                self.level_resets = 0
                 self.state = "title"
                 self.audio.stop_music()
                 run_pregame_sequence()
@@ -373,6 +377,7 @@ class Game:
             elif self.state == "won":
                 self.current_level = 1
                 self.dashes = 0
+                self.level_resets = 0
                 self.state = "title"
                 self.audio.stop_music()
                 run_pregame_sequence()
@@ -381,6 +386,7 @@ class Game:
             elif self.state == "game_over":
                 self.current_level = 1
                 self.dashes = 0
+                self.level_resets = 0
                 self.state = "title"
                 self.audio.stop_music()
                 run_pregame_sequence()
@@ -409,6 +415,7 @@ class Game:
         self.coins.empty()
         self.dash_power_ups.empty()
         self.hazards.empty()
+        self.hearts.empty()
         self.particles.clear()
         
         self.player = Player((self.playfield.left + 100, self.playfield.centery), 
@@ -559,7 +566,7 @@ class Game:
             self.audio.play_gameplay_music()
         elif self.state == "game_over":
             self.audio.play_game_over_music()
-        elif self.state in ["paused", "credits", "return_to_title_screen", "level_reset_confirm"]:
+        elif self.state in ["paused", "credits", "return_to_title_screen", "level_reset_confirm", "settings"]:
             self.audio.play_pause_music()
         elif self.state in ["level_cleared", "won"]:
             self.audio.play_level_cleared_won_music()
@@ -794,8 +801,16 @@ class Game:
                 pygame.draw.line(self.screen, gear_col, p1, p2, 2)
             pygame.draw.circle(self.screen, gear_col, btn.center, 5, 2)
 
-            hint = self.font.render("Settings", True, self.palette.menu_muted)
-            hint_rect = hint.get_rect(midright = (btn.left - 8, btn.centery + 1))
+            hint = self.font.render("Settings", True, self.palette.text)
+            hint_rect = hint.get_rect(midright = (btn.left - 10, btn.centery + 1))
+            
+            # Draw box behind "Settings" text
+            box_padding = 6
+            box_rect = hint_rect.inflate(box_padding * 2, box_padding * 2)
+            box_surf = pygame.Surface(box_rect.size, pygame.SRCALPHA)
+            box_surf.fill((0, 0, 0, 255))  # Opaque black
+            self.screen.blit(box_surf, box_rect)
+            
             self.screen.blit(hint, hint_rect)
 
         elif self.state == "level_cleared":
@@ -821,6 +836,11 @@ class Game:
             self._draw_centered(
                 "You Escaped! — Press Enter to return to title screen.",
                 y = self.playfield.centery,
+                color = self.palette.menu_text,
+            )
+            self._draw_centered(
+                f"Level restarts used: {self.level_resets}",
+                y = self.playfield.centery + 40,
                 color = self.palette.menu_text,
             )
 
@@ -998,7 +1018,7 @@ class Game:
     def _title_settings_button_rect(self) -> pygame.Rect:
         size = 34
         margin = 14
-        return pygame.Rect(SCREEN_W - size - margin, HUD_H + margin, size, size)
+        return pygame.Rect(SCREEN_W - size - margin, HUD_H + 2 * margin, size, size)
 
     def _fmt_time(self, seconds: float) -> str:
         total = max(0, int(round(seconds)))
