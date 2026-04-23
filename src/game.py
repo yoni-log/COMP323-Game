@@ -58,6 +58,7 @@ class Game:
         self._settings_return_state = "paused"
 
         self.rng = random.Random(5)
+        
         # Mixer often fails on macOS (CoreAudio) after window/display changes; game must still run.
         init_mixer_safe()
 
@@ -892,6 +893,8 @@ class Game:
 
         elif self.state == "credits":
             self.screen.fill((0, 0, 0))
+            
+            # Credits Header
             self._draw_centered(
                 "Credits:",
                 y = self.playfield.centery - 280,
@@ -902,39 +905,93 @@ class Game:
                 (12, 76),
                 color = self.palette.menu_text,
             )
+
+            # Music Credits:
             self._draw_text(
-                f'"Loading screen loop" by Brandon Morris licensed CC0: https://opengameart.org/content/loading-screen-loop',
+                "Music Attributions:",
                 (12, 106),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                f'"Rock menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/rock-menu',
+                f'           "Loading screen loop" by Brandon Morris licensed CC0: https://opengameart.org/content/loading-screen-loop',
                 (12, 126),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                f'"Theme Menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/theme-menu',
+                f'           "Rock menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/rock-menu',
                 (12, 146),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                f'"Tragic ambient main menu" by brandon75689 licensed OGA-BY 3.0 or CC0:',
+                f'           "Theme Menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/theme-menu',
                 (12, 166),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                '           https://opengameart.org/content/tragic-ambient-main-menu',
+                f'           "Tragic ambient main menu" by brandon75689 licensed OGA-BY 3.0 or CC0:',
                 (12, 186),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                f'"Menu Music Loop" by HorrorPen licensed CC-BY 3.0: https://opengameart.org/content/menu-music-loop',
+                '                      https://opengameart.org/content/tragic-ambient-main-menu',
                 (12, 206),
                 color = self.palette.menu_text,
             )
             self._draw_text(
-                f'"Victory Theme for RPG" by cynicmusic licensed CC0: https://opengameart.org/content/victory-theme-for-rpg',
+                f'           "Menu Music Loop" by HorrorPen licensed CC-BY 3.0: https://opengameart.org/content/menu-music-loop',
                 (12, 226),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                f'           "Victory Theme for RPG" by cynicmusic licensed CC0: https://opengameart.org/content/victory-theme-for-rpg',
+                (12, 246),
+                color = self.palette.menu_text,
+            )
+            
+            # Character Credits:
+            self._draw_text(
+                "Character Attributions:",
+                (12, 286),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           Shape Characters (1.0)",
+                (12, 306),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           Created/distributed by Kenney (www.kenney.nl)",
+                (12, 326),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           Creation date: 26/10/2023",
+                (12, 346),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           License: (Creative Commons Zero, CC0)",
+                (12, 366),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           http://creativecommons.org/publicdomain/zero/1.0/",
+                (12, 386),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           You can use this content for personal, educational, and commercial purposes.",
+                (12, 406),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)",
+                (12, 426),
+                color = self.palette.menu_text,
+            )
+            self._draw_text(
+                "           Website: www.kenney.nl",
+                (12, 446),
                 color = self.palette.menu_text,
             )
 

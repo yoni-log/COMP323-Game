@@ -1,39 +1,51 @@
-Don't Crumble
-A reflex-driven survival platformer where the floor is always collapsing beneath you. Run, jump, and dash to stay alive as the ground crumbles — collect coins, manage your health, and survive as long as possible.
+Team D: Alena Eshaya, Gavin Hein
 
-How to Run
+1. Title and Description:
 
-1. From this directory, install dependencies:
-pip install -r requirements.txt
+    Don't Crumble:
+    A reflex-driven survival platformer where the floor is always collapsing beneath you. Run, jump, and dash to stay alive as the ground crumbles — collect coins, manage your health, and survive as long as possible.
 
-2.  Run the game:
-python main.py 
+2. Setup Instructions:
 
-Controls
-Move: Move:  Arrow Keys or A / D
-Jump: Jump:  Space or W
-Dash: Dash:  Left or Right Shift  (cooldown shown in HUD)
-Restart: Restart:  Enter  (on Game Over screen)
-Quit: Quit:  ESC
+    From this directory, install dependencies:
+    - `pip install -r requirements.txt`
 
-What's Included
-A side—scrolling danger "zone" that follows the player from left to right.
-Full movement system: running, jumping, and dashing with cooldown
-Coin pickups with risk-reward positioning
-Health and damage system with HUD display
-Score tracking and Game Over / restart flow
-Start screen with animated background and controls display
+    Run the game:
+    - `python main.py`
 
-Scope
-In scope: Core survival loop, collapsing floor, player movement (run / jump / dash), coin collection, health system, functional HUD (score + health), Game Over and restart screen, start screen.
+3. Controls:
 
-Out of scope: Multiple levels, win condition, checkpoints, sound and music, narrative or story elements.
+    - `WASD` or arrow keys: move
+    - `Left Shift` or `Right Shift`: dash
+    - `P`: pause/resume
+    - `R`: restart level
+    - `O`: settings
+    - `C`: credits
+    - `T`: return to title screen
+    - `Esc`: quit
 
-See TUNING_NOTES.md for movement and feel parameter details.
+4. Known issues: anything the player might encounter that you know about
 
-Team
-Alena Eshaya
-Gavin Hein
-Ioannis Giannopoulos
+    None at this time.
 
-COMP 323/488 — Group Assignment
+5. Credits:
+
+    Music Attributions (OpenGameArt.org):
+
+        "Loading screen loop" by Brandon Morris licensed CC0: "https://opengameart.org/content/loading-screen-loop
+        "Rock menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/rock-menu
+        "Theme Menu" by Alexandr Zhelanov licensed CC-BY 3.0: https://opengameart.org/content/theme-menu
+        "Tragic ambient main menu" by brandon75689 licensed OGA-BY 3.0 or CC0: "https://opengameart.org/content/tragic-ambient-main-menu
+        "Menu Music Loop" by HorrorPen licensed CC-BY 3.0: https://opengameart.org/content/menu-music-loop
+        "Victory Theme for RPG" by cynicmusic licensed CC0: https://opengameart.org/content/victory-theme-for-rpg
+
+    Character Attributions:
+    
+        Shape Characters (1.0)
+        Created/distributed by Kenney (www.kenney.nl)
+        Creation date: 26/10/2023
+        License: (Creative Commons Zero, CC0)
+        http://creativecommons.org/publicdomain/zero/1.0/
+        You can use this content for personal, educational, and commercial purposes.
+        Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)
+        Website: www.kenney.nl
